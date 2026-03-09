@@ -1,1 +1,1523 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriPlan Pro — Kliniczny Planista Diety</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body, #root { margin:0; padding:0; width:100%; min-height:100vh; background:#0d1117; font-family:'DM Sans',sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo } = React;
 
+
+// ─── FOOD DATABASE ───────────────────────────────────────────────────────────
+const FOODS = [
+  { id: 1, name: "Kurczak pierś", category: "Mięso i drób", per100g: { kcal: 165, protein: 31, fat: 3.6, carbs: 0, fiber: 0, sugar: 0, saturatedFat: 1.0, sodium: 74, potassium: 256, calcium: 15, iron: 1.0, magnesium: 29, phosphorus: 220, zinc: 1.0, vitA: 21, vitB1: 0.08, vitB2: 0.12, vitB3: 13.7, vitB6: 0.9, vitB12: 0.3, vitC: 0, vitD: 0.1, vitE: 0.3, vitK: 0 } },
+  { id: 2, name: "Wołowina mielona", category: "Mięso i drób", per100g: { kcal: 254, protein: 17.2, fat: 20, carbs: 0, fiber: 0, sugar: 0, saturatedFat: 7.9, sodium: 72, potassium: 270, calcium: 18, iron: 2.2, magnesium: 20, phosphorus: 175, zinc: 4.8, vitA: 0, vitB1: 0.05, vitB2: 0.18, vitB3: 4.8, vitB6: 0.3, vitB12: 2.6, vitC: 0, vitD: 0.1, vitE: 0.5, vitK: 1.5 } },
+  { id: 3, name: "Łosoś atlantycki", category: "Ryby i owoce morza", per100g: { kcal: 208, protein: 20, fat: 13, carbs: 0, fiber: 0, sugar: 0, saturatedFat: 3.1, sodium: 59, potassium: 363, calcium: 12, iron: 0.8, magnesium: 27, phosphorus: 260, zinc: 0.6, vitA: 50, vitB1: 0.23, vitB2: 0.38, vitB3: 7.9, vitB6: 0.6, vitB12: 3.2, vitC: 3.5, vitD: 11, vitE: 1.1, vitK: 0.5 } },
+  { id: 4, name: "Tuńczyk w wodzie", category: "Ryby i owoce morza", per100g: { kcal: 116, protein: 25.5, fat: 1.0, carbs: 0, fiber: 0, sugar: 0, saturatedFat: 0.3, sodium: 320, potassium: 237, calcium: 10, iron: 1.3, magnesium: 31, phosphorus: 265, zinc: 0.7, vitA: 20, vitB1: 0.03, vitB2: 0.1, vitB3: 13.3, vitB6: 0.4, vitB12: 2.5, vitC: 0, vitD: 4.5, vitE: 0.5, vitK: 0 } },
+  { id: 5, name: "Indyk pierś", category: "Mięso i drób", per100g: { kcal: 157, protein: 29.9, fat: 3.6, carbs: 0, fiber: 0, sugar: 0, saturatedFat: 1.0, sodium: 70, potassium: 296, calcium: 19, iron: 1.4, magnesium: 31, phosphorus: 210, zinc: 2.0, vitA: 0, vitB1: 0.07, vitB2: 0.14, vitB3: 11.8, vitB6: 0.7, vitB12: 0.5, vitC: 0, vitD: 0.4, vitE: 0.1, vitK: 0 } },
+  { id: 6, name: "Jajko kurze", category: "Nabiał i jaja", per100g: { kcal: 155, protein: 12.6, fat: 10.6, carbs: 1.1, fiber: 0, sugar: 1.1, saturatedFat: 3.3, sodium: 124, potassium: 138, calcium: 56, iron: 1.8, magnesium: 12, phosphorus: 198, zinc: 1.3, vitA: 160, vitB1: 0.07, vitB2: 0.48, vitB3: 0.06, vitB6: 0.17, vitB12: 1.1, vitC: 0, vitD: 2.0, vitE: 1.0, vitK: 0.3 } },
+  { id: 7, name: "Mleko 3.2%", category: "Nabiał i jaja", per100g: { kcal: 61, protein: 3.2, fat: 3.2, carbs: 4.7, fiber: 0, sugar: 4.7, saturatedFat: 2.0, sodium: 44, potassium: 150, calcium: 120, iron: 0.03, magnesium: 13, phosphorus: 95, zinc: 0.4, vitA: 46, vitB1: 0.04, vitB2: 0.18, vitB3: 0.08, vitB6: 0.04, vitB12: 0.45, vitC: 1.0, vitD: 0.1, vitE: 0.07, vitK: 0.3 } },
+  { id: 8, name: "Twaróg chudy", category: "Nabiał i jaja", per100g: { kcal: 72, protein: 12.4, fat: 0.3, carbs: 4.7, fiber: 0, sugar: 4.7, saturatedFat: 0.1, sodium: 406, potassium: 137, calcium: 86, iron: 0.1, magnesium: 11, phosphorus: 159, zinc: 0.5, vitA: 5, vitB1: 0.03, vitB2: 0.21, vitB3: 0.11, vitB6: 0.06, vitB12: 0.5, vitC: 0, vitD: 0.1, vitE: 0.1, vitK: 0 } },
+  { id: 9, name: "Jogurt naturalny", category: "Nabiał i jaja", per100g: { kcal: 59, protein: 3.5, fat: 3.3, carbs: 4.7, fiber: 0, sugar: 4.7, saturatedFat: 2.1, sodium: 46, potassium: 155, calcium: 121, iron: 0.05, magnesium: 12, phosphorus: 95, zinc: 0.6, vitA: 40, vitB1: 0.04, vitB2: 0.17, vitB3: 0.1, vitB6: 0.05, vitB12: 0.4, vitC: 0.7, vitD: 0.1, vitE: 0.07, vitK: 0.5 } },
+  { id: 10, name: "Ser Gouda", category: "Nabiał i jaja", per100g: { kcal: 356, protein: 25, fat: 27.4, carbs: 2.2, fiber: 0, sugar: 0.5, saturatedFat: 17.6, sodium: 819, potassium: 121, calcium: 700, iron: 0.24, magnesium: 29, phosphorus: 546, zinc: 3.9, vitA: 310, vitB1: 0.03, vitB2: 0.35, vitB3: 0.06, vitB6: 0.08, vitB12: 1.5, vitC: 0, vitD: 0.5, vitE: 0.25, vitK: 2.3 } },
+  { id: 11, name: "Ryż biały gotowany", category: "Zboża i kasze", per100g: { kcal: 130, protein: 2.7, fat: 0.3, carbs: 28.2, fiber: 0.4, sugar: 0, saturatedFat: 0.1, sodium: 1, potassium: 35, calcium: 10, iron: 0.2, magnesium: 12, phosphorus: 43, zinc: 0.5, vitA: 0, vitB1: 0.02, vitB2: 0.01, vitB3: 0.4, vitB6: 0.05, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.04, vitK: 0 } },
+  { id: 12, name: "Kasza gryczana", category: "Zboża i kasze", per100g: { kcal: 92, protein: 3.4, fat: 0.6, carbs: 19.9, fiber: 2.7, sugar: 0.9, saturatedFat: 0.1, sodium: 4, potassium: 88, calcium: 7, iron: 0.8, magnesium: 51, phosphorus: 70, zinc: 0.6, vitA: 0, vitB1: 0.04, vitB2: 0.06, vitB3: 1.6, vitB6: 0.1, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.1, vitK: 3.3 } },
+  { id: 13, name: "Płatki owsiane", category: "Zboża i kasze", per100g: { kcal: 379, protein: 13.2, fat: 6.9, carbs: 67.7, fiber: 10.1, sugar: 1.0, saturatedFat: 1.2, sodium: 6, potassium: 429, calcium: 54, iron: 4.7, magnesium: 177, phosphorus: 523, zinc: 4.0, vitA: 0, vitB1: 0.76, vitB2: 0.14, vitB3: 1.1, vitB6: 0.1, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.7, vitK: 3.0 } },
+  { id: 14, name: "Chleb pszenny", category: "Zboża i kasze", per100g: { kcal: 265, protein: 9.0, fat: 3.2, carbs: 49.2, fiber: 2.7, sugar: 5.0, saturatedFat: 0.7, sodium: 490, potassium: 115, calcium: 107, iron: 3.5, magnesium: 23, phosphorus: 108, zinc: 0.9, vitA: 0, vitB1: 0.5, vitB2: 0.29, vitB3: 4.4, vitB6: 0.1, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.2, vitK: 0 } },
+  { id: 15, name: "Makaron gotowany", category: "Zboża i kasze", per100g: { kcal: 158, protein: 5.8, fat: 0.9, carbs: 30.9, fiber: 1.8, sugar: 0.6, saturatedFat: 0.2, sodium: 1, potassium: 44, calcium: 7, iron: 0.5, magnesium: 18, phosphorus: 58, zinc: 0.5, vitA: 0, vitB1: 0.02, vitB2: 0.02, vitB3: 0.4, vitB6: 0.05, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.06, vitK: 0 } },
+  { id: 16, name: "Quinoa gotowana", category: "Zboża i kasze", per100g: { kcal: 120, protein: 4.4, fat: 1.9, carbs: 21.3, fiber: 2.8, sugar: 0.9, saturatedFat: 0.2, sodium: 7, potassium: 172, calcium: 17, iron: 1.5, magnesium: 64, phosphorus: 152, zinc: 1.1, vitA: 5, vitB1: 0.1, vitB2: 0.11, vitB3: 0.4, vitB6: 0.12, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.6, vitK: 0 } },
+  { id: 17, name: "Brokuły", category: "Warzywa", per100g: { kcal: 34, protein: 2.8, fat: 0.4, carbs: 6.6, fiber: 2.6, sugar: 1.7, saturatedFat: 0.05, sodium: 33, potassium: 316, calcium: 47, iron: 0.7, magnesium: 21, phosphorus: 66, zinc: 0.4, vitA: 31, vitB1: 0.07, vitB2: 0.12, vitB3: 0.64, vitB6: 0.18, vitB12: 0, vitC: 89.2, vitD: 0, vitE: 0.78, vitK: 101.6 } },
+  { id: 18, name: "Szpinak", category: "Warzywa", per100g: { kcal: 23, protein: 2.9, fat: 0.4, carbs: 3.6, fiber: 2.2, sugar: 0.4, saturatedFat: 0.06, sodium: 79, potassium: 558, calcium: 99, iron: 2.7, magnesium: 79, phosphorus: 49, zinc: 0.5, vitA: 469, vitB1: 0.08, vitB2: 0.19, vitB3: 0.72, vitB6: 0.2, vitB12: 0, vitC: 28.1, vitD: 0, vitE: 2.0, vitK: 482.9 } },
+  { id: 19, name: "Marchew", category: "Warzywa", per100g: { kcal: 41, protein: 0.9, fat: 0.2, carbs: 9.6, fiber: 2.8, sugar: 4.7, saturatedFat: 0.04, sodium: 69, potassium: 320, calcium: 33, iron: 0.3, magnesium: 12, phosphorus: 35, zinc: 0.24, vitA: 835, vitB1: 0.07, vitB2: 0.06, vitB3: 0.98, vitB6: 0.14, vitB12: 0, vitC: 5.9, vitD: 0, vitE: 0.66, vitK: 13.2 } },
+  { id: 20, name: "Ziemniak gotowany", category: "Warzywa", per100g: { kcal: 87, protein: 1.9, fat: 0.1, carbs: 20.1, fiber: 1.8, sugar: 0.9, saturatedFat: 0.03, sodium: 6, potassium: 379, calcium: 8, iron: 0.3, magnesium: 22, phosphorus: 44, zinc: 0.3, vitA: 0, vitB1: 0.1, vitB2: 0.02, vitB3: 1.44, vitB6: 0.3, vitB12: 0, vitC: 13, vitD: 0, vitE: 0.01, vitK: 2.9 } },
+  { id: 21, name: "Pomidor", category: "Warzywa", per100g: { kcal: 18, protein: 0.9, fat: 0.2, carbs: 3.9, fiber: 1.2, sugar: 2.6, saturatedFat: 0.03, sodium: 5, potassium: 237, calcium: 10, iron: 0.3, magnesium: 11, phosphorus: 24, zinc: 0.17, vitA: 42, vitB1: 0.04, vitB2: 0.02, vitB3: 0.59, vitB6: 0.08, vitB12: 0, vitC: 13.7, vitD: 0, vitE: 0.54, vitK: 7.9 } },
+  { id: 22, name: "Papryka czerwona", category: "Warzywa", per100g: { kcal: 31, protein: 1.0, fat: 0.3, carbs: 6.0, fiber: 2.1, sugar: 4.2, saturatedFat: 0.04, sodium: 4, potassium: 211, calcium: 7, iron: 0.4, magnesium: 12, phosphorus: 26, zinc: 0.3, vitA: 157, vitB1: 0.05, vitB2: 0.09, vitB3: 0.98, vitB6: 0.29, vitB12: 0, vitC: 127.7, vitD: 0, vitE: 1.58, vitK: 4.9 } },
+  { id: 23, name: "Ogórek", category: "Warzywa", per100g: { kcal: 15, protein: 0.7, fat: 0.1, carbs: 3.6, fiber: 0.5, sugar: 1.7, saturatedFat: 0.02, sodium: 2, potassium: 147, calcium: 16, iron: 0.3, magnesium: 13, phosphorus: 24, zinc: 0.2, vitA: 5, vitB1: 0.03, vitB2: 0.03, vitB3: 0.1, vitB6: 0.04, vitB12: 0, vitC: 2.8, vitD: 0, vitE: 0.03, vitK: 16.4 } },
+  { id: 24, name: "Cebula", category: "Warzywa", per100g: { kcal: 40, protein: 1.1, fat: 0.1, carbs: 9.3, fiber: 1.7, sugar: 4.2, saturatedFat: 0.04, sodium: 4, potassium: 146, calcium: 23, iron: 0.2, magnesium: 10, phosphorus: 29, zinc: 0.17, vitA: 0, vitB1: 0.05, vitB2: 0.03, vitB3: 0.12, vitB6: 0.1, vitB12: 0, vitC: 7.4, vitD: 0, vitE: 0.02, vitK: 0.4 } },
+  { id: 25, name: "Banan", category: "Owoce", per100g: { kcal: 89, protein: 1.1, fat: 0.3, carbs: 22.8, fiber: 2.6, sugar: 12.2, saturatedFat: 0.11, sodium: 1, potassium: 358, calcium: 5, iron: 0.26, magnesium: 27, phosphorus: 22, zinc: 0.15, vitA: 3, vitB1: 0.03, vitB2: 0.07, vitB3: 0.67, vitB6: 0.37, vitB12: 0, vitC: 8.7, vitD: 0, vitE: 0.1, vitK: 0.5 } },
+  { id: 26, name: "Jabłko", category: "Owoce", per100g: { kcal: 52, protein: 0.3, fat: 0.2, carbs: 13.8, fiber: 2.4, sugar: 10.4, saturatedFat: 0.03, sodium: 1, potassium: 107, calcium: 6, iron: 0.12, magnesium: 5, phosphorus: 11, zinc: 0.04, vitA: 3, vitB1: 0.02, vitB2: 0.03, vitB3: 0.09, vitB6: 0.04, vitB12: 0, vitC: 4.6, vitD: 0, vitE: 0.18, vitK: 2.2 } },
+  { id: 27, name: "Truskawki", category: "Owoce", per100g: { kcal: 32, protein: 0.7, fat: 0.3, carbs: 7.7, fiber: 2.0, sugar: 4.9, saturatedFat: 0.02, sodium: 1, potassium: 153, calcium: 16, iron: 0.41, magnesium: 13, phosphorus: 24, zinc: 0.14, vitA: 1, vitB1: 0.02, vitB2: 0.02, vitB3: 0.39, vitB6: 0.05, vitB12: 0, vitC: 58.8, vitD: 0, vitE: 0.29, vitK: 2.2 } },
+  { id: 28, name: "Pomarańcza", category: "Owoce", per100g: { kcal: 47, protein: 0.9, fat: 0.1, carbs: 11.8, fiber: 2.4, sugar: 9.4, saturatedFat: 0.02, sodium: 0, potassium: 181, calcium: 40, iron: 0.1, magnesium: 10, phosphorus: 14, zinc: 0.07, vitA: 11, vitB1: 0.09, vitB2: 0.04, vitB3: 0.28, vitB6: 0.06, vitB12: 0, vitC: 53.2, vitD: 0, vitE: 0.18, vitK: 0 } },
+  { id: 29, name: "Borówki", category: "Owoce", per100g: { kcal: 57, protein: 0.7, fat: 0.3, carbs: 14.5, fiber: 2.4, sugar: 10, saturatedFat: 0.03, sodium: 1, potassium: 77, calcium: 6, iron: 0.28, magnesium: 6, phosphorus: 12, zinc: 0.16, vitA: 3, vitB1: 0.04, vitB2: 0.04, vitB3: 0.42, vitB6: 0.05, vitB12: 0, vitC: 9.7, vitD: 0, vitE: 0.57, vitK: 19 } },
+  { id: 30, name: "Awokado", category: "Owoce", per100g: { kcal: 160, protein: 2.0, fat: 14.7, carbs: 8.5, fiber: 6.7, sugar: 0.7, saturatedFat: 2.1, sodium: 7, potassium: 485, calcium: 12, iron: 0.55, magnesium: 29, phosphorus: 52, zinc: 0.64, vitA: 7, vitB1: 0.07, vitB2: 0.13, vitB3: 1.74, vitB6: 0.26, vitB12: 0, vitC: 10, vitD: 0, vitE: 2.07, vitK: 21 } },
+  { id: 31, name: "Soczewica czerwona", category: "Rośliny strączkowe", per100g: { kcal: 116, protein: 9.0, fat: 0.4, carbs: 20.1, fiber: 7.9, sugar: 1.8, saturatedFat: 0.05, sodium: 2, potassium: 369, calcium: 19, iron: 3.3, magnesium: 36, phosphorus: 180, zinc: 1.3, vitA: 2, vitB1: 0.17, vitB2: 0.07, vitB3: 1.06, vitB6: 0.18, vitB12: 0, vitC: 1.5, vitD: 0, vitE: 0.11, vitK: 1.7 } },
+  { id: 32, name: "Ciecierzyca gotowana", category: "Rośliny strączkowe", per100g: { kcal: 164, protein: 8.9, fat: 2.6, carbs: 27.4, fiber: 7.6, sugar: 4.8, saturatedFat: 0.27, sodium: 7, potassium: 291, calcium: 49, iron: 2.9, magnesium: 48, phosphorus: 168, zinc: 1.5, vitA: 3, vitB1: 0.12, vitB2: 0.06, vitB3: 0.53, vitB6: 0.14, vitB12: 0, vitC: 1.3, vitD: 0, vitE: 0.35, vitK: 4.0 } },
+  { id: 33, name: "Fasola czarna", category: "Rośliny strączkowe", per100g: { kcal: 132, protein: 8.9, fat: 0.5, carbs: 23.7, fiber: 8.7, sugar: 0.3, saturatedFat: 0.13, sodium: 1, potassium: 355, calcium: 27, iron: 2.1, magnesium: 70, phosphorus: 140, zinc: 1.0, vitA: 0, vitB1: 0.24, vitB2: 0.06, vitB3: 0.51, vitB6: 0.07, vitB12: 0, vitC: 0, vitD: 0, vitE: 0.87, vitK: 2.7 } },
+  { id: 34, name: "Migdały", category: "Orzechy i nasiona", per100g: { kcal: 579, protein: 21.2, fat: 49.9, carbs: 21.6, fiber: 12.5, sugar: 4.4, saturatedFat: 3.8, sodium: 1, potassium: 733, calcium: 264, iron: 3.7, magnesium: 270, phosphorus: 481, zinc: 3.1, vitA: 0, vitB1: 0.21, vitB2: 1.14, vitB3: 3.62, vitB6: 0.14, vitB12: 0, vitC: 0, vitD: 0, vitE: 25.6, vitK: 0 } },
+  { id: 35, name: "Orzechy włoskie", category: "Orzechy i nasiona", per100g: { kcal: 654, protein: 15.2, fat: 65.2, carbs: 13.7, fiber: 6.7, sugar: 2.6, saturatedFat: 6.1, sodium: 2, potassium: 441, calcium: 98, iron: 2.9, magnesium: 158, phosphorus: 346, zinc: 3.1, vitA: 1, vitB1: 0.34, vitB2: 0.15, vitB3: 1.13, vitB6: 0.54, vitB12: 0, vitC: 1.3, vitD: 0, vitE: 0.7, vitK: 2.7 } },
+  { id: 36, name: "Nasiona chia", category: "Orzechy i nasiona", per100g: { kcal: 486, protein: 16.5, fat: 30.7, carbs: 42.1, fiber: 34.4, sugar: 0, saturatedFat: 3.3, sodium: 16, potassium: 407, calcium: 631, iron: 7.7, magnesium: 335, phosphorus: 860, zinc: 4.6, vitA: 54, vitB1: 0.62, vitB2: 0.17, vitB3: 8.83, vitB6: 0.09, vitB12: 0, vitC: 1.6, vitD: 0, vitE: 0.5, vitK: 0 } },
+  { id: 37, name: "Oliwa z oliwek", category: "Tłuszcze i oleje", per100g: { kcal: 884, protein: 0, fat: 100, carbs: 0, fiber: 0, sugar: 0, saturatedFat: 13.8, sodium: 2, potassium: 1, calcium: 1, iron: 0.56, magnesium: 0, phosphorus: 0, zinc: 0, vitA: 0, vitB1: 0, vitB2: 0, vitB3: 0, vitB6: 0, vitB12: 0, vitC: 0, vitD: 0, vitE: 14.4, vitK: 60.2 } },
+  { id: 38, name: "Masło", category: "Tłuszcze i oleje", per100g: { kcal: 717, protein: 0.9, fat: 81.1, carbs: 0.1, fiber: 0, sugar: 0.1, saturatedFat: 51.4, sodium: 714, potassium: 24, calcium: 24, iron: 0.02, magnesium: 2, phosphorus: 24, zinc: 0.09, vitA: 684, vitB1: 0, vitB2: 0.03, vitB3: 0.04, vitB6: 0, vitB12: 0.17, vitC: 0, vitD: 1.5, vitE: 2.3, vitK: 7.0 } },
+  { id: 39, name: "Tofu", category: "Rośliny strączkowe", per100g: { kcal: 76, protein: 8.1, fat: 4.8, carbs: 1.9, fiber: 0.3, sugar: 0.5, saturatedFat: 0.7, sodium: 7, potassium: 121, calcium: 350, iron: 2.7, magnesium: 30, phosphorus: 97, zinc: 0.8, vitA: 0, vitB1: 0.08, vitB2: 0.05, vitB3: 0.2, vitB6: 0.05, vitB12: 0, vitC: 0.1, vitD: 0, vitE: 0.01, vitK: 2.0 } },
+  { id: 40, name: "Bataty", category: "Warzywa", per100g: { kcal: 86, protein: 1.6, fat: 0.1, carbs: 20.1, fiber: 3.0, sugar: 4.2, saturatedFat: 0.02, sodium: 55, potassium: 337, calcium: 30, iron: 0.6, magnesium: 25, phosphorus: 47, zinc: 0.3, vitA: 961, vitB1: 0.08, vitB2: 0.06, vitB3: 0.56, vitB6: 0.27, vitB12: 0, vitC: 2.4, vitD: 0, vitE: 0.26, vitK: 1.8 } },
+];
+
+// ─── PATIENT PROFILES ────────────────────────────────────────────────────────
+const PATIENT_PROFILES = {
+  healthy: {
+    id: "healthy", label: "Zdrowy dorosły", icon: "🧑", color: "#22c55e",
+    description: "Standardowe zapotrzebowanie dla dorosłej osoby",
+    rrdi: { kcal: 2000, protein: 50, fat: 70, carbs: 260, fiber: 25, sodium: 2300, potassium: 3500, calcium: 1000, iron: 14, magnesium: 375, phosphorus: 700, zinc: 10, vitA: 800, vitB1: 1.1, vitB2: 1.4, vitB3: 16, vitB6: 1.4, vitB12: 2.5, vitC: 80, vitD: 15, vitE: 12, vitK: 75 },
+    warnings: [],
+    notes: "Brak specjalnych ograniczeń dietetycznych."
+  },
+  diabetes: {
+    id: "diabetes", label: "Cukrzyca typu 2", icon: "🩸", color: "#f97316",
+    description: "Kontrola glikemii – limit cukrów i węglowodanów",
+    rrdi: { kcal: 1800, protein: 60, fat: 60, carbs: 180, fiber: 30, sodium: 2000, potassium: 3500, calcium: 1000, iron: 14, magnesium: 400, phosphorus: 700, zinc: 10, vitA: 800, vitB1: 1.1, vitB2: 1.4, vitB3: 16, vitB6: 1.4, vitB12: 2.5, vitC: 80, vitD: 20, vitE: 12, vitK: 75 },
+    limits: { carbs: { max: 180, warn: "⚠️ Wysokie węglowodany! Ryzyko hiperglikemii." }, sugar: { max: 25, warn: "⚠️ Nadmiar cukrów prostych! Kontroluj glikemię." } },
+    prioritize: ["fiber", "magnesium", "vitD", "vitB1"],
+    avoid: ["sugar", "carbs"],
+    notes: "Unikaj cukrów prostych. Preferuj produkty o niskim IG. Dbaj o błonnik i magnez (poprawia insulinowrażliwość).",
+    warningNutrients: { sugar: { max: 25, label: "Cukry" }, carbs: { max: 180, label: "Węglowodany" } }
+  },
+  hypertension: {
+    id: "hypertension", label: "Nadciśnienie", icon: "❤️", color: "#ef4444",
+    description: "Dieta DASH – ograniczenie sodu, więcej potasu",
+    rrdi: { kcal: 2000, protein: 50, fat: 60, carbs: 260, fiber: 30, sodium: 1500, potassium: 4700, calcium: 1200, iron: 14, magnesium: 420, phosphorus: 700, zinc: 10, vitA: 800, vitB1: 1.1, vitB2: 1.4, vitB3: 16, vitB6: 1.4, vitB12: 2.5, vitC: 100, vitD: 15, vitE: 15, vitK: 75 },
+    limits: { sodium: { max: 1500, warn: "🚨 Przekroczono limit sodu! Ryzyko wzrostu ciśnienia." } },
+    prioritize: ["potassium", "magnesium", "calcium", "vitC"],
+    avoid: ["sodium"],
+    notes: "Ogranicz sód do <1500 mg/dobę. Zwiększ spożycie potasu (banany, ziemniaki) i magnezu. Dieta DASH zaleca dużo warzyw i niskotłuszczowych produktów mlecznych.",
+    warningNutrients: { sodium: { max: 1500, label: "Sód" } }
+  },
+  kidney: {
+    id: "kidney", label: "Choroby nerek (CKD)", icon: "🫘", color: "#8b5cf6",
+    description: "Ograniczenie potasu, fosforu, białka i sodu",
+    rrdi: { kcal: 2000, protein: 40, fat: 70, carbs: 270, fiber: 25, sodium: 1500, potassium: 2000, calcium: 1000, iron: 14, magnesium: 300, phosphorus: 800, zinc: 10, vitA: 800, vitB1: 1.1, vitB2: 1.4, vitB3: 16, vitB6: 1.4, vitB12: 2.5, vitC: 60, vitD: 10, vitE: 12, vitK: 75 },
+    limits: {
+      potassium: { max: 2000, warn: "🚨 Nadmiar potasu! Ryzyko hiperkaliemii." },
+      phosphorus: { max: 800, warn: "⚠️ Wysoki fosfor! Ryzyko powikłań kostnych." },
+      protein: { max: 40, warn: "⚠️ Nadmiar białka obciąża nerki." },
+      sodium: { max: 1500, warn: "🚨 Za dużo sodu!" }
+    },
+    prioritize: ["vitD", "calcium", "vitB12"],
+    avoid: ["potassium", "phosphorus", "protein", "sodium"],
+    notes: "Ogranicz potas, fosfor i białko. Unikaj produktów mlecznych w dużych ilościach, orzechów, nasion strączkowych. Często konieczna suplementacja wit. D.",
+    warningNutrients: { potassium: { max: 2000, label: "Potas" }, phosphorus: { max: 800, label: "Fosfor" }, protein: { max: 40, label: "Białko" }, sodium: { max: 1500, label: "Sód" } }
+  },
+  osteoporosis: {
+    id: "osteoporosis", label: "Osteoporoza", icon: "🦴", color: "#06b6d4",
+    description: "Zwiększone zapotrzebowanie na wapń i witaminę D",
+    rrdi: { kcal: 2000, protein: 60, fat: 70, carbs: 260, fiber: 25, sodium: 2000, potassium: 3500, calcium: 1500, iron: 14, magnesium: 420, phosphorus: 700, zinc: 11, vitA: 800, vitB1: 1.1, vitB2: 1.4, vitB3: 16, vitB6: 1.4, vitB12: 2.5, vitC: 80, vitD: 25, vitE: 12, vitK: 120 },
+    prioritize: ["calcium", "vitD", "vitK", "magnesium", "phosphorus"],
+    avoid: [],
+    notes: "Kluczowe: wapń (≥1500 mg/d), witamina D (≥25 µg/d) i witamina K (≥120 µg/d). Ogranicz kofeinę i alkohol. Białko wspiera kości.",
+    warningNutrients: {}
+  },
+  pregnancy: {
+    id: "pregnancy", label: "Ciąża", icon: "🤰", color: "#ec4899",
+    description: "Zwiększone zapotrzebowanie na żelazo, kwas foliowy i wapń",
+    rrdi: { kcal: 2300, protein: 71, fat: 77, carbs: 290, fiber: 28, sodium: 2300, potassium: 4700, calcium: 1300, iron: 27, magnesium: 360, phosphorus: 700, zinc: 11, vitA: 770, vitB1: 1.4, vitB2: 1.4, vitB3: 18, vitB6: 1.9, vitB12: 2.6, vitC: 85, vitD: 15, vitE: 15, vitK: 90 },
+    prioritize: ["iron", "calcium", "vitB12", "vitD", "vitC", "magnesium"],
+    avoid: [],
+    notes: "Priorytet: żelazo (27 mg/d – zapobiega anemii), wapń (1300 mg/d), kwas foliowy/B12, witamina D. Unikaj surowego mięsa, ryb bogatych w rtęć (tuńczyk – z umiarem).",
+    warningNutrients: {}
+  },
+  celiac: {
+    id: "celiac", label: "Celiakia / gluten-free", icon: "🌾", color: "#84cc16",
+    description: "Dieta bezglutenowa – eliminacja pszenicy, żyta, jęczmienia",
+    rrdi: { kcal: 2000, protein: 50, fat: 70, carbs: 260, fiber: 25, sodium: 2300, potassium: 3500, calcium: 1000, iron: 18, magnesium: 375, phosphorus: 700, zinc: 10, vitA: 800, vitB1: 1.4, vitB2: 1.4, vitB3: 16, vitB6: 1.4, vitB12: 2.5, vitC: 80, vitD: 20, vitE: 12, vitK: 75 },
+    avoidFoods: [14, 15],
+    prioritize: ["iron", "calcium", "vitB1", "vitD", "fiber"],
+    avoid: [],
+    notes: "Bezwzględnie eliminuj gluten (pszenica, żyto, jęczmień). Preferuj ryż, grykę (bezglutenowa!), kukurydzę, quinoa. Celiakia często powoduje niedobory żelaza i wapnia.",
+    warningNutrients: {}
+  },
+  vegan: {
+    id: "vegan", label: "Weganizm", icon: "🌱", color: "#4ade80",
+    description: "Dieta roślinna – uważaj na B12, D, żelazo i cynk",
+    rrdi: { kcal: 2000, protein: 55, fat: 70, carbs: 260, fiber: 30, sodium: 2300, potassium: 3500, calcium: 1000, iron: 18, magnesium: 375, phosphorus: 700, zinc: 11, vitA: 800, vitB1: 1.2, vitB2: 1.4, vitB3: 16, vitB6: 1.6, vitB12: 4.0, vitC: 80, vitD: 20, vitE: 12, vitK: 75 },
+    avoidFoods: [1,2,3,4,5,6,7,8,9,10,38],
+    prioritize: ["vitB12", "vitD", "iron", "calcium", "zinc", "vitA"],
+    avoid: [],
+    notes: "Krytyczne niedobory: wit. B12 (wymagana suplementacja!), wit. D, żelazo (niehemowe – gorsza wchłanialność), cynk. Łącz wit. C z żelazem roślinnym dla lepszego wchłaniania.",
+    warningNutrients: {}
+  },
+};
+
+// ─── NUTRIENT META ────────────────────────────────────────────────────────────
+const ALL_NUTRIENTS = [
+  { key: "kcal", label: "Kalorie", unit: "kcal", group: "Makro" },
+  { key: "protein", label: "Białko", unit: "g", group: "Makro" },
+  { key: "fat", label: "Tłuszcz", unit: "g", group: "Makro" },
+  { key: "carbs", label: "Węglowodany", unit: "g", group: "Makro" },
+  { key: "fiber", label: "Błonnik", unit: "g", group: "Makro" },
+  { key: "sugar", label: "Cukry", unit: "g", group: "Makro" },
+  { key: "saturatedFat", label: "Tł. nasycone", unit: "g", group: "Makro" },
+  { key: "sodium", label: "Sód", unit: "mg", group: "Minerały" },
+  { key: "potassium", label: "Potas", unit: "mg", group: "Minerały" },
+  { key: "calcium", label: "Wapń", unit: "mg", group: "Minerały" },
+  { key: "iron", label: "Żelazo", unit: "mg", group: "Minerały" },
+  { key: "magnesium", label: "Magnez", unit: "mg", group: "Minerały" },
+  { key: "phosphorus", label: "Fosfor", unit: "mg", group: "Minerały" },
+  { key: "zinc", label: "Cynk", unit: "mg", group: "Minerały" },
+  { key: "vitA", label: "Wit. A", unit: "µg", group: "Witaminy" },
+  { key: "vitB1", label: "Wit. B1", unit: "mg", group: "Witaminy" },
+  { key: "vitB2", label: "Wit. B2", unit: "mg", group: "Witaminy" },
+  { key: "vitB3", label: "Wit. B3", unit: "mg", group: "Witaminy" },
+  { key: "vitB6", label: "Wit. B6", unit: "mg", group: "Witaminy" },
+  { key: "vitB12", label: "Wit. B12", unit: "µg", group: "Witaminy" },
+  { key: "vitC", label: "Wit. C", unit: "mg", group: "Witaminy" },
+  { key: "vitD", label: "Wit. D", unit: "µg", group: "Witaminy" },
+  { key: "vitE", label: "Wit. E", unit: "mg", group: "Witaminy" },
+  { key: "vitK", label: "Wit. K", unit: "µg", group: "Witaminy" },
+];
+
+const MEAL_NAMES_3 = ["Śniadanie", "Obiad", "Kolacja"];
+const MEAL_NAMES_4 = ["Śniadanie", "II Śniadanie", "Obiad", "Kolacja"];
+const CATEGORIES = ["Wszystkie", ...new Set(FOODS.map(f => f.category))];
+
+function calcTotals(items) {
+  const t = {};
+  ALL_NUTRIENTS.forEach(n => { t[n.key] = 0; });
+  items.forEach(({ food, grams }) => {
+    ALL_NUTRIENTS.forEach(n => { t[n.key] += (food.per100g[n.key] || 0) * grams / 100; });
+  });
+  return t;
+}
+
+const COLORS = { Makro: "#f97316", Minerały: "#8b5cf6", Witaminy: "#22c55e" };
+const N_COLORS = {
+  kcal: "#f97316", protein: "#3b82f6", fat: "#eab308", carbs: "#22c55e", fiber: "#84cc16", sugar: "#f43f5e", saturatedFat: "#fb923c",
+  sodium: "#a78bfa", potassium: "#f472b6", calcium: "#34d399", iron: "#f87171", magnesium: "#60a5fa", phosphorus: "#facc15", zinc: "#4ade80",
+  vitA: "#fbbf24", vitB1: "#a3e635", vitB2: "#fb923c", vitB3: "#f472b6", vitB6: "#38bdf8", vitB12: "#c084fc", vitC: "#4ade80", vitD: "#fde047", vitE: "#86efac", vitK: "#6ee7b7"
+};
+
+// ─── COMPONENTS ──────────────────────────────────────────────────────────────
+function NutrientBar({ label, value, rda, unit, color, isWarning, isPriority }) {
+  const pct = rda ? Math.min(150, (value / rda) * 100) : 0;
+  const over = rda && value > rda * 1.0;
+  const danger = rda && value > rda * 1.2;
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, color: isWarning && danger ? "#ef4444" : isPriority ? "#fbbf24" : "#94a3b8" }}>
+          {isWarning && danger ? "🚨" : isPriority ? "⭐" : ""}
+          {label}
+        </span>
+        <span style={{ fontWeight: 700, color: danger ? "#ef4444" : over ? "#f97316" : "#e2e8f0" }}>
+          {value.toFixed(1)} / {rda} {unit}
+        </span>
+      </div>
+      <div style={{ height: 5, background: "#21262d", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{
+          height: "100%", borderRadius: 3, transition: "width 0.4s ease",
+          width: `${pct}%`,
+          background: danger ? "linear-gradient(90deg,#ef4444,#dc2626)" : over ? "linear-gradient(90deg,#f97316,#ea580c)" : color
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function MealSlot({ name, items, onAdd, onRemove, gInput, setGInput, search, setSearch, catFilter, setCatFilter, filteredFoods, profile, targetKcal, targetProtein, onApplyAI, dietGoalLabel, lifestyleLabel, activityLabel }) {
+  const totals = useMemo(() => calcTotals(items), [items]);
+  const avoided = profile?.avoidFoods || [];
+
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiError, setAiError] = useState(null);
+  const [showAI, setShowAI] = useState(false);
+  const [showPrep, setShowPrep] = useState(false);
+
+  const kcalOk = targetKcal > 0 && Math.abs(totals.kcal - targetKcal) / targetKcal <= 0.10;
+  const kcalOver = totals.kcal > targetKcal * 1.10;
+  const proteinOk = targetProtein > 0 && totals.protein >= targetProtein * 0.9;
+
+  const foodListForAI = FOODS.map(f => ({
+    id: f.id, name: f.name, category: f.category,
+    kcal: f.per100g.kcal, protein: f.per100g.protein,
+    fat: f.per100g.fat, carbs: f.per100g.carbs,
+    sodium: f.per100g.sodium, potassium: f.per100g.potassium,
+    phosphorus: f.per100g.phosphorus, sugar: f.per100g.sugar
+  }));
+
+  const handleAIGenerate = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiResult(null);
+
+    const avoidedFoodNames = (profile.avoidFoods || []).map(id => FOODS.find(f=>f.id===id)?.name).filter(Boolean);
+    const avoidNutrients = profile.avoid || [];
+    const prioritizeNutrients = profile.prioritize || [];
+    const warningLimits = Object.entries(profile.warningNutrients || {}).map(([k,v]) => `${v.label} max ${v.max}`).join(", ");
+
+    const systemPrompt = `Jesteś doświadczonym dietetykiem klinicznym. Planujesz posiłek WYŁĄCZNIE z podanej bazy produktów.
+
+BAZA PRODUKTÓW (JSON):
+${JSON.stringify(foodListForAI)}
+
+BEZWZGLĘDNE WYMAGANIA ŻYWIENIOWE:
+1. Suma kcal posiłku MUSI być dokładnie w zakresie ±5% od wartości docelowej. To jest wymóg KRYTYCZNY – sprawdź obliczenia przed odpowiedzią.
+2. Białko w posiłku MUSI osiągnąć lub przekroczyć cel białkowy dla tego posiłku. To jest wymóg KRYTYCZNY.
+3. Wybieraj WYŁĄCZNIE produkty z bazy – używaj dokładnych id.
+4. Gramatura realistyczna (30–400g na składnik).
+5. Produkty z listy wykluczeń są ABSOLUTNIE zabronione.
+
+WERYFIKACJA PRZED ODPOWIEDZIĄ:
+- Oblicz: suma(kcal_i * gramy_i / 100) → musi być w zakresie docelowym ±5%
+- Oblicz: suma(białko_i * gramy_i / 100) → musi być ≥ cel białkowy
+- Jeśli nie spełnia wymagań – dostosuj gramaturę lub dodaj składnik białkowy
+
+INSTRUKCJA PRZYGOTOWANIA:
+- Napisz jasne, praktyczne kroki gotowania (4-7 kroków)
+- Uwzględnij: przygotowanie, obróbkę termiczną, przyprawy, podanie
+- Podaj szacowany czas przygotowania
+
+FORMAT ODPOWIEDZI (tylko JSON, zero tekstu poza nim):
+{
+  "mealName": "Nazwa posiłku",
+  "description": "Krótki opis (1-2 zdania)",
+  "rationale": "Uzasadnienie dietetyczne – kcal i białko względem celów",
+  "prepTime": "15 minut",
+  "items": [
+    { "foodId": 1, "grams": 150, "reason": "uzasadnienie" }
+  ],
+  "preparation": [
+    "Krok 1: ...",
+    "Krok 2: ...",
+    "Krok 3: ..."
+  ]
+}`;
+
+    const userMsg = `Zaplanuj posiłek "${name}" dla pacjenta.
+
+PROFIL KLINICZNY: ${profile.label}
+PREFERENCJE: ${aiPrompt}
+
+WYMOGI KALORYCZNE I BIAŁKOWE (KRYTYCZNE):
+- Docelowa kaloryczność: DOKŁADNIE ${targetKcal} kcal (±5% = zakres ${Math.round(targetKcal*0.95)}–${Math.round(targetKcal*1.05)} kcal)
+- Minimalne białko w posiłku: ${targetProtein}g (wymóg 1,5g/kg masy ciała rozłożony proporcjonalnie)
+
+KONTEKST DIETY:
+- Cel diety: ${dietGoalLabel || "nie określono"}
+- Tryb życia: ${lifestyleLabel || "nie określono"}  
+- Aktywność: ${activityLabel || "nie określono"}
+- Priorytety żywieniowe: ${prioritizeNutrients.join(", ") || "brak"}
+- Unikane składniki odżywcze: ${avoidNutrients.join(", ") || "brak"}
+- Limity bezpieczeństwa: ${warningLimits || "standardowe"}
+- Produkty wykluczone z diety: ${avoidedFoodNames.join(", ") || "brak"}
+
+PAMIĘTAJ: Najpierw sprawdź obliczenia – suma kcal musi być w zakresie ${Math.round(targetKcal*0.95)}–${Math.round(targetKcal*1.05)}, białko ≥ ${targetProtein}g.`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1500,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userMsg }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.map(c => c.text || "").join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+
+      const enriched = (parsed.items || []).map(item => {
+        const food = FOODS.find(f => f.id === item.foodId);
+        if (!food) return null;
+        return { ...item, food };
+      }).filter(Boolean);
+
+      setAiResult({ ...parsed, items: enriched });
+      setShowPrep(false);
+    } catch (err) {
+      setAiError("Błąd generowania. Spróbuj ponownie.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (!aiResult) return;
+    aiResult.items.forEach(({ food, grams }) => { onApplyAI(food, grams); });
+    setAiResult(null);
+    setAiPrompt("");
+    setShowAI(false);
+  };
+
+  return (
+    <div style={{ background: "#161b22", border: `1px solid ${kcalOver ? "#ef444444" : items.length > 0 && kcalOk ? "#22c55e44" : "#21262d"}`, borderRadius: 14, overflow: "hidden", transition: "border-color 0.3s" }}>
+      {/* Header */}
+      <div style={{ background: "linear-gradient(135deg, #1a1f2e, #161b22)", padding: "12px 16px", borderBottom: "1px solid #21262d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#f1f5f9" }}>{name}</div>
+          <div style={{ fontSize: 11, color: "#64748b", display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+            <span>{items.length} prod.</span>
+            <span style={{ color: kcalOver ? "#ef4444" : items.length > 0 && kcalOk ? "#22c55e" : "#64748b", fontWeight: items.length > 0 ? 700 : 400 }}>
+              {totals.kcal.toFixed(0)}/{targetKcal} kcal {items.length > 0 && (kcalOk ? "✓" : kcalOver ? "↑" : "…")}
+            </span>
+            {targetProtein > 0 && <span style={{ color: items.length > 0 && proteinOk ? "#60a5fa" : "#64748b", fontWeight: items.length > 0 ? 700 : 400 }}>
+              B: {totals.protein.toFixed(0)}/{targetProtein}g {items.length > 0 && (proteinOk ? "✓" : "↓")}
+            </span>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 5, alignItems:"center", flexWrap:"wrap", justifyContent:"flex-end" }}>
+          {[{l:"T", v: totals.fat, c:"#facc15"},{l:"W", v: totals.carbs, c:"#4ade80"}].map(m=>
+            <span key={m.l} style={{fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:5, background:`rgba(0,0,0,0.3)`, color: m.c}}>{m.l}: {m.v.toFixed(0)}g</span>
+          )}
+          <button onClick={()=>setShowAI(v=>!v)} style={{
+            padding:"4px 10px", borderRadius:7, border:`1px solid ${showAI ? "#a78bfa" : "#30363d"}`,
+            background: showAI ? "rgba(167,139,250,0.15)" : "#0d1117",
+            color: showAI ? "#a78bfa" : "#64748b", fontSize:10, fontWeight:700, cursor:"pointer"
+          }}>✨ AI</button>
+        </div>
+      </div>
+
+      {/* Calorie + Protein progress bars */}
+      <div style={{ padding:"8px 14px 0", display:"flex", flexDirection:"column", gap:4 }}>
+        <div>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"#475569", marginBottom:2 }}>
+            <span>Kalorie</span>
+            <span style={{ color: kcalOver ? "#ef4444" : kcalOk && items.length > 0 ? "#22c55e" : "#475569" }}>
+              {totals.kcal.toFixed(0)} / {targetKcal} kcal ({targetKcal > 0 ? Math.round(totals.kcal/targetKcal*100) : 0}%)
+            </span>
+          </div>
+          <div style={{ height:4, background:"#21262d", borderRadius:2, overflow:"hidden" }}>
+            <div style={{ height:"100%", borderRadius:2, transition:"width 0.3s",
+              width:`${targetKcal > 0 ? Math.min(110, totals.kcal/targetKcal*100) : 0}%`,
+              background: kcalOver ? "linear-gradient(90deg,#ef4444,#dc2626)" : kcalOk && items.length > 0 ? "linear-gradient(90deg,#22c55e,#16a34a)" : "#374151"
+            }} />
+          </div>
+        </div>
+        {targetProtein > 0 && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"#475569", marginBottom:2 }}>
+              <span>Białko (min. {targetProtein}g)</span>
+              <span style={{ color: proteinOk && items.length > 0 ? "#60a5fa" : "#ef4444" }}>
+                {totals.protein.toFixed(1)}g ({targetProtein > 0 ? Math.round(totals.protein/targetProtein*100) : 0}%)
+              </span>
+            </div>
+            <div style={{ height:4, background:"#21262d", borderRadius:2, overflow:"hidden" }}>
+              <div style={{ height:"100%", borderRadius:2, transition:"width 0.3s",
+                width:`${targetProtein > 0 ? Math.min(100, totals.protein/targetProtein*100) : 0}%`,
+                background: proteinOk && items.length > 0 ? "linear-gradient(90deg,#3b82f6,#2563eb)" : "#374151"
+              }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* AI Panel */}
+      {showAI && (
+        <div style={{ padding:"12px 14px 0", borderBottom:"1px solid #21262d", background:"rgba(167,139,250,0.04)", marginTop:8 }}>
+          <div style={{ display:"flex", gap:6, alignItems:"flex-start", marginBottom:10 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:11, color:"#a78bfa", fontWeight:700, marginBottom:5, display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
+                <span>✨</span> Generuj posiłek z AI
+                <span style={{ fontSize:9, color:"#64748b", fontWeight:400 }}>
+                  · {targetKcal} kcal · min. {targetProtein}g białka
+                </span>
+              </div>
+              <div style={{ display:"flex", gap:6, marginBottom:6, flexWrap:"wrap" }}>
+                <span style={{ fontSize:9, padding:"2px 7px", borderRadius:5, background:"rgba(239,68,68,0.12)", color:"#f87171", fontWeight:600 }}>🎯 {targetKcal} kcal ±5%</span>
+                <span style={{ fontSize:9, padding:"2px 7px", borderRadius:5, background:"rgba(59,130,246,0.12)", color:"#93c5fd", fontWeight:600 }}>💪 min. {targetProtein}g białka</span>
+              </div>
+              <textarea
+                value={aiPrompt}
+                onChange={e=>setAiPrompt(e.target.value)}
+                onKeyDown={e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); handleAIGenerate(); }}}
+                placeholder={`Preferencje pacjenta... np. "lubi ryby, nie lubi brokułów"`}
+                rows={2}
+                style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:"1px solid #30363d", background:"#0d1117", color:"#e2e8f0", fontSize:12, outline:"none", resize:"vertical", lineHeight:1.5 }}
+              />
+            </div>
+            <button onClick={handleAIGenerate} disabled={aiLoading || !aiPrompt.trim()} style={{
+              marginTop:36, padding:"8px 12px", borderRadius:8, border:"none", cursor: aiLoading || !aiPrompt.trim() ? "default" : "pointer",
+              background: aiLoading || !aiPrompt.trim() ? "#21262d" : "linear-gradient(135deg,#7c3aed,#6d28d9)",
+              color: aiLoading || !aiPrompt.trim() ? "#475569" : "#fff", fontWeight:700, fontSize:12, whiteSpace:"nowrap"
+            }}>
+              {aiLoading ? "⏳ …" : "🚀 Generuj"}
+            </button>
+          </div>
+
+          {aiError && (
+            <div style={{ fontSize:11, color:"#f87171", padding:"6px 10px", background:"rgba(239,68,68,0.1)", borderRadius:7, marginBottom:10 }}>{aiError}</div>
+          )}
+
+          {aiLoading && (
+            <div style={{ padding:"16px", textAlign:"center", marginBottom:10 }}>
+              <div style={{ fontSize:12, color:"#a78bfa", marginBottom:4 }}>🤖 AI komponuje posiłek…</div>
+              <div style={{ fontSize:10, color:"#475569", marginBottom:8 }}>Weryfikacja kaloryki i białka…</div>
+              <div style={{ height:3, background:"#21262d", borderRadius:2, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:"60%", background:"linear-gradient(90deg,#7c3aed,#a78bfa)", borderRadius:2, animation:"slide 1.2s infinite" }} />
+              </div>
+            </div>
+          )}
+
+          {aiResult && (
+            <div style={{ background:"#0d1117", borderRadius:10, padding:"14px", marginBottom:12, border:"1px solid #30363d" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
+                <div style={{ fontWeight:800, fontSize:14, color:"#f1f5f9" }}>🍽 {aiResult.mealName}</div>
+                {aiResult.prepTime && <span style={{ fontSize:10, color:"#64748b", background:"#161b22", padding:"2px 8px", borderRadius:6, flexShrink:0 }}>⏱ {aiResult.prepTime}</span>}
+              </div>
+              <div style={{ fontSize:11, color:"#94a3b8", marginBottom:8, lineHeight:1.5 }}>{aiResult.description}</div>
+              <div style={{ fontSize:11, color:"#a78bfa", marginBottom:12, background:"rgba(167,139,250,0.08)", borderRadius:7, padding:"7px 10px", borderLeft:"3px solid #7c3aed" }}>
+                💡 {aiResult.rationale}
+              </div>
+
+              {/* Proposed items */}
+              <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Składniki</div>
+                {aiResult.items.map(({food, grams, reason}, idx) => {
+                  const kcalItem = (food.per100g.kcal * grams / 100).toFixed(0);
+                  const proteinItem = (food.per100g.protein * grams / 100).toFixed(1);
+                  return (
+                    <div key={idx} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 8px", borderRadius:8, marginBottom:4, background:"rgba(255,255,255,0.02)", border:"1px solid #21262d" }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, color:"#e2e8f0", fontWeight:600 }}>{food.name}</div>
+                        <div style={{ fontSize:10, color:"#475569" }}>{reason}</div>
+                      </div>
+                      <div style={{ textAlign:"right", flexShrink:0 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#f97316" }}>{grams}g</div>
+                        <div style={{ fontSize:10, color:"#64748b" }}>{kcalItem} kcal · B:{proteinItem}g</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Totals check */}
+              {(() => {
+                const preview = calcTotals(aiResult.items.map(({food,grams})=>({food,grams})));
+                const kOk = Math.abs(preview.kcal - targetKcal) / targetKcal <= 0.05;
+                const pOk = preview.protein >= targetProtein * 0.9;
+                return (
+                  <div style={{ background:"rgba(0,0,0,0.3)", borderRadius:8, padding:"8px 10px", marginBottom:10 }}>
+                    <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Weryfikacja wymagań</div>
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:5, background: kOk ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", color: kOk ? "#4ade80" : "#f87171" }}>
+                        {kOk ? "✓" : "⚠"} {preview.kcal.toFixed(0)} / {targetKcal} kcal
+                      </span>
+                      <span style={{ fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:5, background: pOk ? "rgba(59,130,246,0.15)" : "rgba(239,68,68,0.15)", color: pOk ? "#93c5fd" : "#f87171" }}>
+                        {pOk ? "✓" : "⚠"} {preview.protein.toFixed(1)}g / min.{targetProtein}g białka
+                      </span>
+                      <span style={{ fontSize:11, padding:"3px 8px", borderRadius:5, background:"rgba(250,204,21,0.1)", color:"#facc15" }}>T: {preview.fat.toFixed(1)}g</span>
+                      <span style={{ fontSize:11, padding:"3px 8px", borderRadius:5, background:"rgba(74,222,128,0.1)", color:"#4ade80" }}>W: {preview.carbs.toFixed(1)}g</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Preparation steps */}
+              {aiResult.preparation && aiResult.preparation.length > 0 && (
+                <div style={{ marginBottom:10 }}>
+                  <button onClick={()=>setShowPrep(v=>!v)} style={{
+                    width:"100%", padding:"7px 10px", borderRadius:8, border:`1px solid ${showPrep ? "#f97316" : "#30363d"}`,
+                    background: showPrep ? "rgba(249,115,22,0.08)" : "transparent",
+                    color: showPrep ? "#f97316" : "#64748b", fontSize:11, fontWeight:700, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"space-between"
+                  }}>
+                    <span>👨‍🍳 Sposób przygotowania</span>
+                    <span>{showPrep ? "▲ Zwiń" : "▼ Rozwiń"}</span>
+                  </button>
+                  {showPrep && (
+                    <div style={{ marginTop:8, background:"rgba(249,115,22,0.05)", borderRadius:8, padding:"10px 12px", border:"1px solid rgba(249,115,22,0.2)" }}>
+                      <ol style={{ margin:0, paddingLeft:18, display:"flex", flexDirection:"column", gap:8 }}>
+                        {aiResult.preparation.map((step, i) => (
+                          <li key={i} style={{ fontSize:12, color:"#cbd5e1", lineHeight:1.6 }}>
+                            {step.replace(/^Krok \d+:\s*/i, "")}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={handleApply} style={{ flex:1, padding:"9px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#22c55e,#16a34a)", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                  ✓ Zastosuj posiłek
+                </button>
+                <button onClick={()=>setAiResult(null)} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid #30363d", background:"transparent", color:"#64748b", fontSize:12, cursor:"pointer" }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ padding: "12px 14px" }}>
+        {/* Product selector */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Szukaj produktu..."
+            style={{ flex:1, padding:"7px 10px", borderRadius:8, border:"1px solid #30363d", background:"#0d1117", color:"#e2e8f0", fontSize:12, outline:"none", fontFamily:"inherit" }} />
+        </div>
+        <div style={{ maxHeight: 130, overflowY: "auto", marginBottom: 8 }}>
+          {filteredFoods.slice(0,20).map(food => {
+            const isAvoided = avoided.includes(food.id);
+            return (
+              <div key={food.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 6px", borderRadius:7, marginBottom:2, background: isAvoided ? "rgba(239,68,68,0.05)" : "transparent", border: isAvoided ? "1px solid rgba(239,68,68,0.2)" : "1px solid transparent" }}>
+                <span style={{ flex:1, fontSize:12, color: isAvoided ? "#f87171" : "#e2e8f0" }}>
+                  {isAvoided ? "🚫 " : ""}{food.name}
+                  <span style={{ fontSize:10, color:"#475569", marginLeft:4 }}>{food.per100g.kcal}kcal</span>
+                </span>
+                <input value={gInput[food.id]||""} onChange={e=>setGInput(p=>({...p,[food.id]:e.target.value}))}
+                  placeholder="g" type="number"
+                  style={{ width:46, padding:"3px 6px", borderRadius:6, border:"1px solid #30363d", background:"#0d1117", color:"#e2e8f0", fontSize:11, outline:"none" }} />
+                <button onClick={()=>onAdd(food)} style={{ padding:"3px 9px", borderRadius:6, border:"none", background: isAvoided ? "#7f1d1d" : "linear-gradient(135deg,#22c55e,#16a34a)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>+</button>
+              </div>
+            );
+          })}
+        </div>
+        {/* Added items */}
+        {items.length > 0 && (
+          <div style={{ borderTop:"1px solid #21262d", paddingTop:8 }}>
+            {items.map(({food, grams})=>(
+              <div key={food.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 4px", borderRadius:6, marginBottom:2, background:"rgba(255,255,255,0.02)" }}>
+                <span style={{ flex:1, fontSize:11, color:"#cbd5e1" }}>{food.name}</span>
+                <span style={{ fontSize:11, color:"#64748b" }}>{grams}g</span>
+                <button onClick={()=>onRemove(food.id)} style={{ padding:"1px 6px", borderRadius:5, border:"none", background:"rgba(239,68,68,0.2)", color:"#f87171", fontSize:11, cursor:"pointer" }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+function App() {
+  const [page, setPage] = useState("setup"); // setup | plan | report
+  const [patientName, setPatientName] = useState("");
+  const [profileId, setProfileId] = useState("healthy");
+  const [mealCount, setMealCount] = useState(3);
+  const DEFAULT_DIST = { 3: [30, 45, 25], 4: [25, 15, 40, 20] };
+  const [caloricDist, setCaloricDist] = useState({ 3: [30, 45, 25], 4: [25, 15, 40, 20] });
+  const [editingDist, setEditingDist] = useState(false);
+  const [age, setAge] = useState("");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [sex, setSex] = useState("female");
+
+  // New: lifestyle & goals
+  const [activityLevel, setActivityLevel] = useState("moderate");
+  const [dietGoal, setDietGoal] = useState("health");
+  const [lifestyle, setLifestyle] = useState("office");
+  const [customKcal, setCustomKcal] = useState(null); // null = use suggested
+  const [editingKcal, setEditingKcal] = useState(false);
+  const [kcalInputVal, setKcalInputVal] = useState("");
+
+  // meals: array of arrays of {food, grams}
+  const [meals, setMeals] = useState(Array(4).fill(null).map(()=>[]));
+  const [searches, setSearches] = useState(Array(4).fill(""));
+  const [gInputs, setGInputs] = useState(Array(4).fill(null).map(()=>({})));
+  const [catFilters, setCatFilters] = useState(Array(4).fill("Wszystkie"));
+  const [reportTab, setReportTab] = useState("Makro");
+
+  const profile = PATIENT_PROFILES[profileId];
+  const mealNames = mealCount === 3 ? MEAL_NAMES_3 : MEAL_NAMES_4;
+
+  const activeMeals = meals.slice(0, mealCount);
+
+  const dayTotals = useMemo(() => {
+    const all = activeMeals.flat();
+    return calcTotals(all);
+  }, [activeMeals]);
+
+  const activeWarnings = useMemo(() => {
+    if (!profile.warningNutrients) return [];
+    return Object.entries(profile.warningNutrients)
+      .filter(([key, {max}]) => dayTotals[key] > max)
+      .map(([key, {max, label}]) => ({ key, max, label, value: dayTotals[key] }));
+  }, [dayTotals, profile]);
+
+  const getFilteredFoods = (mealIdx) => {
+    const s = searches[mealIdx].toLowerCase();
+    const cat = catFilters[mealIdx];
+    return FOODS.filter(f =>
+      (cat === "Wszystkie" || f.category === cat) &&
+      f.name.toLowerCase().includes(s)
+    );
+  };
+
+  const addToMeal = (mealIdx, food) => {
+    const g = parseFloat(gInputs[mealIdx][food.id] || 100);
+    if (!g || g <= 0) return;
+    setMeals(prev => prev.map((m,i) => {
+      if (i !== mealIdx) return m;
+      const ex = m.find(x => x.food.id === food.id);
+      if (ex) return m.map(x => x.food.id === food.id ? {...x, grams: x.grams + g} : x);
+      return [...m, { food, grams: g }];
+    }));
+    setGInputs(prev => prev.map((g2,i) => i !== mealIdx ? g2 : {...g2, [food.id]: ""}));
+  };
+
+  const removeFromMeal = (mealIdx, foodId) => {
+    setMeals(prev => prev.map((m,i) => i !== mealIdx ? m : m.filter(x => x.food.id !== foodId)));
+  };
+
+  const addToMealDirect = (mealIdx, food, grams) => {
+    setMeals(prev => prev.map((m,i) => {
+      if (i !== mealIdx) return m;
+      const ex = m.find(x => x.food.id === food.id);
+      if (ex) return m.map(x => x.food.id === food.id ? {...x, grams: x.grams + grams} : x);
+      return [...m, { food, grams }];
+    }));
+  };
+
+  const ACTIVITY_FACTORS = {
+    sedentary:  { label: "Bardzo niska (PAL 1.2)",  pal: 1.2,    desc: "Brak ćwiczeń, praca siedząca" },
+    light:      { label: "Niska (PAL 1.375)",        pal: 1.375,  desc: "Lekkie ćwiczenia 1–3×/tydz." },
+    moderate:   { label: "Umiarkowana (PAL 1.55)",   pal: 1.55,   desc: "Ćwiczenia 3–5×/tydz." },
+    active:     { label: "Wysoka (PAL 1.725)",        pal: 1.725,  desc: "Intensywne ćwiczenia 6–7×/tydz." },
+    veryactive: { label: "Bardzo wysoka (PAL 1.9)",  pal: 1.9,    desc: "Trening 2× dziennie, praca fizyczna" },
+  };
+  const DIET_GOAL_MODIFIERS = {
+    reduction:  { label: "Redukcja masy ciała", modifier: -500, color: "#f97316", icon: "📉", desc: "Deficyt ~500 kcal/d · ~0,5 kg/tyg." },
+    mildreduct: { label: "Łagodna redukcja",    modifier: -250, color: "#fb923c", icon: "📊", desc: "Deficyt ~250 kcal/d · ~0,25 kg/tyg." },
+    maintain:   { label: "Utrzymanie masy",     modifier:    0, color: "#22c55e", icon: "⚖️",  desc: "Zbilansowana kaloryka" },
+    health:     { label: "Poprawa zdrowia",     modifier:    0, color: "#06b6d4", icon: "💊", desc: "Zbilansowana dieta, fokus na mikroskładniki" },
+    mildgain:   { label: "Łagodna masa",        modifier: +250, color: "#a78bfa", icon: "📈", desc: "Nadwyżka ~250 kcal/d · +0,25 kg/tyg." },
+    mass:       { label: "Budowanie masy",      modifier: +500, color: "#8b5cf6", icon: "💪", desc: "Nadwyżka ~500 kcal/d · +0,5 kg/tyg." },
+  };
+  const LIFESTYLE_OPTIONS = {
+    office:    { label: "Praca biurowa/siedząca", icon: "💼" },
+    mixed:     { label: "Praca mieszana",          icon: "🚶" },
+    physical:  { label: "Praca fizyczna",          icon: "🏗️" },
+    student:   { label: "Student",                 icon: "📚" },
+    retired:   { label: "Emeryt/Rencista",         icon: "🏡" },
+    athlete:   { label: "Sportowiec/Trenujący",    icon: "🏃" },
+  };
+
+  const bmr = useMemo(() => {
+    if (!age || !weight || !height) return null;
+    const w = parseFloat(weight), h = parseFloat(height), a = parseFloat(age);
+    if (isNaN(w)||isNaN(h)||isNaN(a)) return null;
+    return sex === "male" ? (10*w + 6.25*h - 5*a + 5) : (10*w + 6.25*h - 5*a - 161);
+  }, [age, weight, height, sex]);
+
+  const suggestedKcal = useMemo(() => {
+    if (!bmr) return profile.rrdi.kcal;
+    const pal = ACTIVITY_FACTORS[activityLevel].pal;
+    const goalMod = DIET_GOAL_MODIFIERS[dietGoal].modifier;
+    return Math.max(1200, Math.round(bmr * pal + goalMod));
+  }, [bmr, activityLevel, dietGoal, profile]);
+
+  const targetKcalDay = customKcal !== null ? customKcal : suggestedKcal;
+
+  // Protein target: 1.5g per kg body weight (if weight known), distributed proportionally per meal
+  const totalProteinTarget = useMemo(() => {
+    const w = parseFloat(weight);
+    if (!isNaN(w) && w > 0) return Math.round(w * 1.5);
+    return null;
+  }, [weight]);
+
+  const S = { // styles helper
+    page: { background:"#0d1117", minHeight:"100vh", color:"#e2e8f0", fontFamily:"'DM Sans', sans-serif" },
+    card: { background:"#161b22", border:"1px solid #21262d", borderRadius:14 },
+  };
+
+  return (
+    <div style={S.page}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet" />
+      <style>{`
+        * { box-sizing:border-box; margin:0; padding:0; }
+        ::-webkit-scrollbar { width:5px; height:5px; }
+        ::-webkit-scrollbar-track { background:#161b22; }
+        ::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+        input,select,button { font-family:'DM Sans',sans-serif; }
+        .nav-btn { transition: all 0.18s; }
+        .nav-btn:hover { opacity:0.85; }
+        .profile-card { transition: all 0.18s; cursor:pointer; }
+        .profile-card:hover { transform:translateY(-2px); }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+        @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+      `}</style>
+
+      {/* ── HEADER ── */}
+      <div style={{ background:"linear-gradient(135deg,#1a1f2e,#161b22)", borderBottom:"1px solid #21262d", padding:"0 20px" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"14px 0", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#22c55e,#16a34a)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🥗</div>
+            <div>
+              <div style={{ fontWeight:800, fontSize:18, color:"#f1f5f9", letterSpacing:"-0.3px" }}>NutriPlan Pro</div>
+              <div style={{ fontSize:10, color:"#64748b", fontWeight:500 }}>Kliniczny planista diety</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            {[["setup","⚙️ Pacjent"],["plan","🍽 Plan diety"],["report","📊 Raport"]].map(([v,l])=>(
+              <button key={v} className="nav-btn" onClick={()=>setPage(v)} style={{
+                padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12,
+                background: page===v ? `linear-gradient(135deg,${profile.color},${profile.color}cc)` : "#21262d",
+                color: page===v ? "#fff" : "#8b949e"
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:1200, margin:"0 auto", padding:"24px 16px" }}>
+
+        {/* ══════════════════ PAGE: SETUP ══════════════════ */}
+        {page === "setup" && (
+          <div className="fade-in">
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontWeight:800, fontSize:24, color:"#f1f5f9", marginBottom:4 }}>Konfiguracja pacjenta</div>
+              <div style={{ color:"#64748b", fontSize:13 }}>Uzupełnij dane, aby system automatycznie zaproponował kalorykę i dostosował zalecenia</div>
+            </div>
+
+            {/* ROW 1: patient data + activity/lifestyle */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+
+              {/* LEFT: Patient data */}
+              <div style={{ ...S.card, padding:20 }}>
+                <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", marginBottom:14, textTransform:"uppercase", letterSpacing:"0.06em" }}>Dane pacjenta</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  <div>
+                    <label style={{ fontSize:12, color:"#64748b", display:"block", marginBottom:4 }}>Imię / Identyfikator</label>
+                    <input value={patientName} onChange={e=>setPatientName(e.target.value)} placeholder="np. Jan Kowalski"
+                      style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:"1px solid #30363d", background:"#0d1117", color:"#e2e8f0", fontSize:13, outline:"none" }} />
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    {[
+                      { label:"Wiek", value:age, setter:setAge, placeholder:"lat", type:"number" },
+                      { label:"Płeć", value:sex, setter:setSex, type:"select", options:[{v:"female",l:"Kobieta"},{v:"male",l:"Mężczyzna"}] },
+                      { label:"Masa (kg)", value:weight, setter:setWeight, placeholder:"kg", type:"number" },
+                      { label:"Wzrost (cm)", value:height, setter:setHeight, placeholder:"cm", type:"number" },
+                    ].map(f => (
+                      <div key={f.label}>
+                        <label style={{ fontSize:12, color:"#64748b", display:"block", marginBottom:4 }}>{f.label}</label>
+                        {f.type === "select"
+                          ? <select value={f.value} onChange={e=>f.setter(e.target.value)}
+                              style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:"1px solid #30363d", background:"#0d1117", color:"#e2e8f0", fontSize:13, outline:"none" }}>
+                              {f.options.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+                            </select>
+                          : <input value={f.value} onChange={e=>f.setter(e.target.value)} placeholder={f.placeholder} type={f.type}
+                              style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:"1px solid #30363d", background:"#0d1117", color:"#e2e8f0", fontSize:13, outline:"none" }} />
+                        }
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* BMR mini result */}
+                  {bmr && (
+                    <div style={{ background:"rgba(34,197,94,0.08)", border:"1px solid rgba(34,197,94,0.2)", borderRadius:9, padding:"10px 12px", display:"flex", gap:14, flexWrap:"wrap" }}>
+                      {[
+                        { label:"PPM (Mifflin)", value:`${Math.round(bmr)} kcal`, color:"#22c55e" },
+                        { label:`CPM (PAL ${ACTIVITY_FACTORS[activityLevel].pal})`, value:`${Math.round(bmr * ACTIVITY_FACTORS[activityLevel].pal)} kcal`, color:"#4ade80" },
+                        weight && height ? { label:"BMI", value:(parseFloat(weight)/((parseFloat(height)/100)**2)).toFixed(1), color:"#a3e635" } : null
+                      ].filter(Boolean).map(item => (
+                        <div key={item.label}>
+                          <div style={{ fontSize:9, color:"#86efac", textTransform:"uppercase", marginBottom:1 }}>{item.label}</div>
+                          <div style={{ fontSize:15, fontWeight:800, color:item.color }}>{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT: Activity + lifestyle */}
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+                {/* Tryb życia */}
+                <div style={{ ...S.card, padding:18 }}>
+                  <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", marginBottom:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>Tryb życia / Zawód</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
+                    {Object.entries(LIFESTYLE_OPTIONS).map(([k,v]) => (
+                      <button key={k} onClick={()=>setLifestyle(k)} style={{
+                        padding:"10px 6px", borderRadius:9, border:`1px solid ${lifestyle===k ? profile.color : "#30363d"}`,
+                        background: lifestyle===k ? `${profile.color}15` : "#0d1117",
+                        cursor:"pointer", textAlign:"center", transition:"all 0.15s"
+                      }}>
+                        <div style={{ fontSize:20, marginBottom:4 }}>{v.icon}</div>
+                        <div style={{ fontSize:10, fontWeight:600, color: lifestyle===k ? profile.color : "#64748b", lineHeight:1.3 }}>{v.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Aktywność fizyczna */}
+                <div style={{ ...S.card, padding:18 }}>
+                  <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", marginBottom:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>Aktywność fizyczna</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                    {Object.entries(ACTIVITY_FACTORS).map(([k,v]) => {
+                      const isActive = activityLevel === k;
+                      return (
+                        <button key={k} onClick={()=>{ setActivityLevel(k); setCustomKcal(null); }} style={{
+                          padding:"9px 12px", borderRadius:9, border:`1px solid ${isActive ? profile.color : "#30363d"}`,
+                          background: isActive ? `${profile.color}15` : "#0d1117",
+                          cursor:"pointer", textAlign:"left", transition:"all 0.15s",
+                          display:"flex", alignItems:"center", gap:10
+                        }}>
+                          <div style={{ width:10, height:10, borderRadius:"50%", background: isActive ? profile.color : "#374151", flexShrink:0 }} />
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:12, fontWeight:600, color: isActive ? profile.color : "#94a3b8" }}>{v.label}</div>
+                            <div style={{ fontSize:10, color:"#475569" }}>{v.desc}</div>
+                          </div>
+                          {isActive && bmr && (
+                            <div style={{ fontSize:11, fontWeight:700, color: profile.color }}>
+                              {Math.round(bmr * v.pal)} kcal
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ROW 2: diet goal + kcal target */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+
+              {/* Diet goal */}
+              <div style={{ ...S.card, padding:20 }}>
+                <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", marginBottom:14, textTransform:"uppercase", letterSpacing:"0.06em" }}>Cel diety / Specyfika planu</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  {Object.entries(DIET_GOAL_MODIFIERS).map(([k,v]) => {
+                    const isActive = dietGoal === k;
+                    return (
+                      <button key={k} onClick={()=>{ setDietGoal(k); setCustomKcal(null); }} style={{
+                        padding:"12px 10px", borderRadius:10, border:`2px solid ${isActive ? v.color : "#21262d"}`,
+                        background: isActive ? `${v.color}12` : "#0d1117",
+                        cursor:"pointer", textAlign:"left", transition:"all 0.15s"
+                      }}>
+                        <div style={{ fontSize:22, marginBottom:4 }}>{v.icon}</div>
+                        <div style={{ fontSize:12, fontWeight:700, color: isActive ? v.color : "#94a3b8", marginBottom:2 }}>{v.label}</div>
+                        <div style={{ fontSize:10, color:"#475569", lineHeight:1.4 }}>{v.desc}</div>
+                        {isActive && bmr && DIET_GOAL_MODIFIERS[k].modifier !== 0 && (
+                          <div style={{ marginTop:6, fontSize:10, fontWeight:700, color: v.color }}>
+                            {v.modifier > 0 ? "+" : ""}{v.modifier} kcal/d korekta
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Caloric target */}
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                <div style={{ ...S.card, padding:20, border: customKcal !== null ? "1px solid rgba(251,191,36,0.5)" : "1px solid #21262d" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                    <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em" }}>Cel kaloryczny / dzień</div>
+                    {customKcal !== null && (
+                      <button onClick={()=>{ setCustomKcal(null); setEditingKcal(false); }} style={{
+                        fontSize:10, color:"#64748b", background:"none", border:"1px solid #30363d", borderRadius:6, padding:"3px 8px", cursor:"pointer"
+                      }}>↺ Wróć do sugestii AI</button>
+                    )}
+                  </div>
+
+                  {/* Big suggestion/value display */}
+                  <div style={{
+                    background: customKcal !== null ? "rgba(251,191,36,0.08)" : "rgba(34,197,94,0.08)",
+                    border:`1px solid ${customKcal !== null ? "rgba(251,191,36,0.3)" : "rgba(34,197,94,0.2)"}`,
+                    borderRadius:12, padding:"16px", marginBottom:14
+                  }}>
+                    <div style={{ fontSize:10, color: customKcal !== null ? "#fbbf24" : "#86efac", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>
+                      {customKcal !== null ? "✏️ Ustawione ręcznie" : "🤖 Propozycja systemu"}
+                    </div>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:6 }}>
+                      <span style={{ fontSize:48, fontWeight:900, color: customKcal !== null ? "#fbbf24" : "#22c55e", lineHeight:1 }}>{targetKcalDay}</span>
+                      <span style={{ fontSize:15, color:"#64748b" }}>kcal / dzień</span>
+                    </div>
+                    {bmr && (
+                      <div style={{ fontSize:11, color:"#475569", lineHeight:1.7, borderTop:"1px solid rgba(255,255,255,0.05)", paddingTop:8, marginTop:4 }}>
+                        <span style={{ color:"#64748b" }}>PPM</span> {Math.round(bmr)} × <span style={{ color:"#64748b" }}>PAL</span> {ACTIVITY_FACTORS[activityLevel].pal} = {Math.round(bmr * ACTIVITY_FACTORS[activityLevel].pal)} kcal
+                        {DIET_GOAL_MODIFIERS[dietGoal].modifier !== 0 && (
+                          <span style={{ color: DIET_GOAL_MODIFIERS[dietGoal].modifier < 0 ? "#f97316" : "#a78bfa" }}>
+                            {" "}{DIET_GOAL_MODIFIERS[dietGoal].modifier > 0 ? "+" : ""}{DIET_GOAL_MODIFIERS[dietGoal].modifier} kcal ({DIET_GOAL_MODIFIERS[dietGoal].label})
+                          </span>
+                        )}
+                        {customKcal !== null && (
+                          <div style={{ color:"#64748b", marginTop:2 }}>
+                            Różnica od sugestii: <span style={{ color: customKcal > suggestedKcal ? "#a78bfa" : "#f97316", fontWeight:700 }}>
+                              {customKcal > suggestedKcal ? "+" : ""}{customKcal - suggestedKcal} kcal
+                            </span>
+                          </div>
+                        )}
+                        {!bmr && <div style={{ color:"#374151" }}>Uzupełnij dane pacjenta dla pełnej kalkulacji</div>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit / expand section */}
+                  {!editingKcal ? (
+                    <button onClick={()=>{ setEditingKcal(true); setKcalInputVal(String(customKcal ?? suggestedKcal)); }} style={{
+                      width:"100%", padding:"10px", borderRadius:9, border:"1px dashed #374151",
+                      background:"transparent", color:"#64748b", fontSize:12, fontWeight:600, cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6
+                    }}>
+                      ✏️ Dostosuj kalorykę ręcznie
+                    </button>
+                  ) : (
+                    <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                      {/* Quick preset chips */}
+                      {bmr && (
+                        <div>
+                          <div style={{ fontSize:10, color:"#475569", marginBottom:6 }}>Szybkie presety względem CPM:</div>
+                          <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                            {[
+                              { delta:-500, label:"−500", tag:"Mocna redukcja" },
+                              { delta:-250, label:"−250", tag:"Łagodna redukcja" },
+                              { delta:0,    label:"=CPM", tag:"Utrzymanie" },
+                              { delta:+250, label:"+250", tag:"Łagodna masa" },
+                              { delta:+500, label:"+500", tag:"Budowanie" },
+                            ].map(({ delta, label, tag }) => {
+                              const val = Math.max(1200, Math.round(bmr * ACTIVITY_FACTORS[activityLevel].pal) + delta);
+                              const isSelected = parseInt(kcalInputVal) === val;
+                              return (
+                                <button key={delta} onClick={()=>setKcalInputVal(String(val))} style={{
+                                  padding:"5px 10px", borderRadius:7,
+                                  border:`1px solid ${isSelected ? "#fbbf24" : "#30363d"}`,
+                                  background: isSelected ? "rgba(251,191,36,0.15)" : "#0d1117",
+                                  cursor:"pointer", textAlign:"center"
+                                }}>
+                                  <div style={{ fontSize:11, fontWeight:700, color: isSelected ? "#fbbf24" : "#64748b" }}>{label}</div>
+                                  <div style={{ fontSize:9, color:"#374151" }}>{val} kcal</div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Number input row */}
+                      <div style={{ display:"flex", alignItems:"center", background:"#0d1117", borderRadius:10, border:"1px solid #fbbf2455", overflow:"hidden" }}>
+                        <button onClick={()=>setKcalInputVal(v=>String(Math.max(1000, parseInt(v||0)-50)))}
+                          style={{ padding:"10px 14px", border:"none", background:"transparent", color:"#94a3b8", cursor:"pointer", fontSize:18 }}>−</button>
+                        <input type="number" value={kcalInputVal} onChange={e=>setKcalInputVal(e.target.value)}
+                          style={{ flex:1, border:"none", background:"transparent", color:"#fbbf24", fontWeight:900, fontSize:28, textAlign:"center", outline:"none" }} />
+                        <span style={{ paddingRight:10, fontSize:13, color:"#64748b", fontWeight:600 }}>kcal</span>
+                        <button onClick={()=>setKcalInputVal(v=>String(Math.min(5000, parseInt(v||0)+50)))}
+                          style={{ padding:"10px 14px", border:"none", background:"transparent", color:"#94a3b8", cursor:"pointer", fontSize:18 }}>+</button>
+                      </div>
+
+                      {/* Slider */}
+                      <div>
+                        <input type="range" min={1000} max={4500} step={50}
+                          value={parseInt(kcalInputVal) || suggestedKcal}
+                          onChange={e=>setKcalInputVal(e.target.value)}
+                          style={{ width:"100%", accentColor:"#fbbf24", cursor:"pointer" }} />
+                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"#374151", marginTop:2 }}>
+                          <span>1000</span>
+                          {bmr && <span style={{ color:"#22c55e55" }}>AI: {suggestedKcal}</span>}
+                          <span>4500 kcal</span>
+                        </div>
+                      </div>
+
+                      {/* Range context: too low warning */}
+                      {parseInt(kcalInputVal) < 1200 && (
+                        <div style={{ fontSize:11, color:"#f87171", background:"rgba(239,68,68,0.1)", borderRadius:7, padding:"6px 10px" }}>
+                          ⚠️ Poniżej 1200 kcal — bardzo niska kaloryka, wymaga nadzoru medycznego.
+                        </div>
+                      )}
+
+                      <div style={{ display:"flex", gap:8 }}>
+                        <button onClick={()=>{
+                          const v = parseInt(kcalInputVal);
+                          if (v >= 900 && v <= 6000) setCustomKcal(v);
+                          setEditingKcal(false);
+                        }} style={{
+                          flex:1, padding:"10px", borderRadius:9, border:"none",
+                          background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#000",
+                          fontWeight:800, fontSize:13, cursor:"pointer"
+                        }}>✓ Zastosuj {parseInt(kcalInputVal) || "—"} kcal</button>
+                        <button onClick={()=>setEditingKcal(false)} style={{
+                          padding:"10px 14px", borderRadius:9, border:"1px solid #30363d",
+                          background:"transparent", color:"#64748b", fontSize:12, cursor:"pointer"
+                        }}>Anuluj</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Meal count + distribution */}
+                <div style={{ ...S.card, padding:18 }}>
+                  <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", marginBottom:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>Liczba posiłków</div>
+                  <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+                    {[3,4].map(n => (
+                      <button key={n} onClick={()=>setMealCount(n)} style={{
+                        flex:1, padding:"14px 8px", borderRadius:10, cursor:"pointer", transition:"all 0.18s",
+                        border:`2px solid ${mealCount===n ? profile.color : "#30363d"}`,
+                        background: mealCount===n ? `${profile.color}15` : "#0d1117"
+                      }}>
+                        <div style={{ fontSize:24, marginBottom:4 }}>{n===3?"🍽":"🥘"}</div>
+                        <div style={{ fontWeight:800, fontSize:18, color: mealCount===n ? profile.color : "#94a3b8" }}>{n} posiłki</div>
+                        <div style={{ fontSize:10, color:"#64748b", marginTop:2 }}>
+                          {n===3 ? "Śniadanie · Obiad · Kolacja" : "Śn · II Śn · Obiad · Kolacja"}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Distribution */}
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                    <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em" }}>Rozkład kaloryczny</div>
+                    <button onClick={()=>setEditingDist(v=>!v)} style={{
+                      padding:"3px 10px", borderRadius:6,
+                      border:`1px solid ${editingDist ? profile.color : "#30363d"}`,
+                      background: editingDist ? `${profile.color}22` : "transparent",
+                      color: editingDist ? profile.color : "#64748b", fontSize:10, fontWeight:700, cursor:"pointer"
+                    }}>{editingDist ? "✓ Gotowe" : "✏️ Edytuj"}</button>
+                  </div>
+
+                  {(() => {
+                    const dist = caloricDist[mealCount];
+                    const names = mealCount===3 ? MEAL_NAMES_3 : MEAL_NAMES_4;
+                    const total = dist.reduce((a,b)=>a+b,0);
+                    const updateDist = (idx, val) => {
+                      const newVal = Math.max(5, Math.min(85, parseInt(val)||5));
+                      const newDist = [...dist];
+                      const diff = newVal - newDist[idx];
+                      newDist[idx] = newVal;
+                      const othersSum = newDist.reduce((a,v,i)=>i!==idx?a+v:a,0);
+                      if (othersSum > 0) newDist.forEach((v,i)=>{ if(i!==idx) newDist[i]=Math.max(5,Math.round(v - diff*(v/othersSum))); });
+                      const fix = 100 - newDist.reduce((a,b)=>a+b,0);
+                      const lo = newDist.map((_,i)=>i).filter(i=>i!==idx).pop();
+                      if(lo!==undefined) newDist[lo]=Math.max(5,newDist[lo]+fix);
+                      setCaloricDist(prev=>({...prev,[mealCount]:newDist}));
+                    };
+                    return (
+                      <div>
+                        <div style={{ display:"flex", gap:2, height:24, borderRadius:7, overflow:"hidden", marginBottom:10 }}>
+                          {dist.map((p,i)=>(
+                            <div key={i} style={{ flex:p, background:`${profile.color}${["ff","bb","88","55"][i]}`, display:"flex", alignItems:"center", justifyContent:"center", transition:"flex 0.3s" }}>
+                              <span style={{ fontSize:9, fontWeight:800, color:"#fff", textShadow:"0 1px 2px rgba(0,0,0,0.5)" }}>{p}%</span>
+                            </div>
+                          ))}
+                        </div>
+                        {editingDist ? (
+                          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                            {dist.map((p,i)=>(
+                              <div key={i}>
+                                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                                  <span style={{ fontSize:11, color:"#cbd5e1", fontWeight:600 }}>{names[i]}</span>
+                                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                    <span style={{ fontSize:10, color:"#475569" }}>~{Math.round(targetKcalDay*p/100)} kcal</span>
+                                    <div style={{ display:"flex", alignItems:"center", background:"#0d1117", borderRadius:6, border:"1px solid #30363d", overflow:"hidden" }}>
+                                      <button onClick={()=>updateDist(i,p-1)} style={{ padding:"2px 7px", border:"none", background:"transparent", color:"#94a3b8", cursor:"pointer", fontSize:13 }}>−</button>
+                                      <input type="number" value={p} onChange={e=>updateDist(i,e.target.value)}
+                                        style={{ width:36, textAlign:"center", border:"none", background:"transparent", color:profile.color, fontWeight:800, fontSize:12, outline:"none" }} />
+                                      <span style={{ fontSize:10, color:"#64748b", paddingRight:5 }}>%</span>
+                                      <button onClick={()=>updateDist(i,p+1)} style={{ padding:"2px 7px", border:"none", background:"transparent", color:"#94a3b8", cursor:"pointer", fontSize:13 }}>+</button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <input type="range" min={5} max={85} value={p} onChange={e=>updateDist(i,e.target.value)}
+                                  style={{ width:"100%", accentColor:profile.color, cursor:"pointer" }} />
+                              </div>
+                            ))}
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                              <span style={{ fontSize:10, fontWeight:700, color: total===100 ? "#22c55e" : "#ef4444" }}>
+                                {total===100 ? "✓ Suma: 100%" : `⚠️ Suma: ${total}%`}
+                              </span>
+                              <button onClick={()=>setCaloricDist(prev=>({...prev,[mealCount]:[...DEFAULT_DIST[mealCount]]}))}
+                                style={{ fontSize:10, color:"#64748b", background:"none", border:"1px solid #30363d", borderRadius:5, padding:"2px 7px", cursor:"pointer" }}>↺ Domyślne</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display:"flex", gap:5 }}>
+                            {dist.map((p,i)=>(
+                              <div key={i} style={{ flex:p, background:`${profile.color}18`, borderRadius:8, padding:"7px 3px", textAlign:"center", border:`1px solid ${profile.color}33` }}>
+                                <div style={{ fontSize:13, fontWeight:800, color:profile.color }}>{p}%</div>
+                                <div style={{ fontSize:9, color:"#64748b" }}>{names[i]}</div>
+                                <div style={{ fontSize:9, color:"#374151" }}>~{Math.round(targetKcalDay*p/100)} kcal</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* ROW 3: Clinical profile picker */}
+            <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", marginBottom:12, textTransform:"uppercase", letterSpacing:"0.06em" }}>Profil kliniczny pacjenta</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:24 }}>
+              {Object.values(PATIENT_PROFILES).map(p=>(
+                <div key={p.id} className="profile-card" onClick={()=>setProfileId(p.id)} style={{
+                  ...S.card, padding:"16px", border:`2px solid ${profileId===p.id ? p.color : "#21262d"}`,
+                  background: profileId===p.id ? `${p.color}11` : "#161b22"
+                }}>
+                  <div style={{ display:"flex", gap:10, marginBottom:8 }}>
+                    <span style={{ fontSize:24 }}>{p.icon}</span>
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:13, color: profileId===p.id ? p.color : "#e2e8f0" }}>{p.label}</div>
+                      <div style={{ fontSize:10, color:"#64748b" }}>{p.description}</div>
+                    </div>
+                  </div>
+                  {profileId===p.id && p.notes && (
+                    <div style={{ fontSize:11, color:"#94a3b8", lineHeight:1.5, borderTop:`1px solid ${p.color}33`, paddingTop:8, marginTop:4 }}>{p.notes}</div>
+                  )}
+                  {p.prioritize && p.prioritize.length > 0 && (
+                    <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
+                      {p.prioritize.slice(0,4).map(k=>{
+                        const n = ALL_NUTRIENTS.find(x=>x.key===k);
+                        return n ? <span key={k} style={{ fontSize:9, padding:"1px 6px", borderRadius:10, background:`${p.color}22`, color:p.color, fontWeight:600 }}>↑{n.label}</span> : null;
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button onClick={()=>setPage("plan")} style={{
+              padding:"14px 40px", borderRadius:12, border:"none", fontWeight:800, fontSize:15, cursor:"pointer",
+              background:`linear-gradient(135deg,${profile.color},${profile.color}bb)`, color:"#fff"
+            }}>
+              Przejdź do planowania diety →
+            </button>
+          </div>
+        )}
+
+        {/* ══════════════════ PAGE: PLAN ══════════════════ */}
+        {page === "plan" && (
+          <div className="fade-in">
+            {/* Patient badge */}
+            <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:20, flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, background:`${profile.color}15`, border:`1px solid ${profile.color}44`, borderRadius:12, padding:"10px 16px" }}>
+                <span style={{ fontSize:22 }}>{profile.icon}</span>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:14, color:profile.color }}>{patientName || "Pacjent"}</div>
+                  <div style={{ fontSize:11, color:"#94a3b8" }}>{profile.label} · {mealCount} posiłki/dzień</div>
+                </div>
+              </div>
+              <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:"10px 14px" }}>
+                <div style={{ fontSize:9, color:"#64748b", marginBottom:2 }}>{LIFESTYLE_OPTIONS[lifestyle].icon} Tryb życia</div>
+                <div style={{ fontSize:11, fontWeight:700, color:"#cbd5e1" }}>{LIFESTYLE_OPTIONS[lifestyle].label}</div>
+              </div>
+              <div style={{ background:`${DIET_GOAL_MODIFIERS[dietGoal].color}15`, border:`1px solid ${DIET_GOAL_MODIFIERS[dietGoal].color}44`, borderRadius:12, padding:"10px 14px" }}>
+                <div style={{ fontSize:9, color:"#64748b", marginBottom:2 }}>Cel diety</div>
+                <div style={{ fontSize:11, fontWeight:700, color:DIET_GOAL_MODIFIERS[dietGoal].color }}>{DIET_GOAL_MODIFIERS[dietGoal].icon} {DIET_GOAL_MODIFIERS[dietGoal].label}</div>
+              </div>
+              <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:"10px 16px" }}>
+                <div style={{ fontSize:10, color:"#64748b" }}>Cel kaloryczny</div>
+                <div style={{ fontSize:18, fontWeight:800, color: customKcal !== null ? "#fbbf24" : "#f97316" }}>
+                  {targetKcalDay} <span style={{ fontSize:11 }}>kcal</span>
+                </div>
+                <div style={{ fontSize:9, color:"#475569" }}>{customKcal !== null ? "✏️ ręcznie" : "🤖 AI"} · {DIET_GOAL_MODIFIERS[dietGoal].icon} {DIET_GOAL_MODIFIERS[dietGoal].label}</div>
+              </div>
+              {totalProteinTarget && (
+                <div style={{ background:"rgba(59,130,246,0.1)", border:"1px solid rgba(59,130,246,0.3)", borderRadius:12, padding:"10px 16px" }}>
+                  <div style={{ fontSize:10, color:"#64748b" }}>Cel białkowy</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:"#60a5fa" }}>
+                    {totalProteinTarget}g <span style={{ fontSize:11 }}>białka</span>
+                  </div>
+                  <div style={{ fontSize:9, color:"#475569" }}>1,5g × {weight}kg = {totalProteinTarget}g/d</div>
+                </div>
+              )}
+              <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:"10px 16px" }}>
+                <div style={{ fontSize:10, color:"#64748b" }}>Spożyto dziś</div>
+                <div style={{ fontSize:18, fontWeight:800, color: dayTotals.kcal > targetKcalDay*1.1 ? "#ef4444" : "#22c55e" }}>{dayTotals.kcal.toFixed(0)} <span style={{ fontSize:11 }}>kcal</span></div>
+              </div>
+
+              {/* Active warnings */}
+              {activeWarnings.map(w => (
+                <div key={w.key} style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:12, padding:"10px 16px" }}>
+                  <div style={{ fontSize:11, color:"#fca5a5", fontWeight:700 }}>🚨 {w.label}: {w.value.toFixed(0)} / {w.max}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Notes for profile */}
+            {profile.notes && (
+              <div style={{ background:`${profile.color}0d`, border:`1px solid ${profile.color}33`, borderRadius:12, padding:"12px 16px", marginBottom:20, fontSize:12, color:"#cbd5e1" }}>
+                <span style={{ fontWeight:700, color:profile.color }}>💡 Wskazówki kliniczne: </span>{profile.notes}
+              </div>
+            )}
+
+            {/* Meal grid */}
+            <div style={{ display:"grid", gridTemplateColumns: mealCount===3 ? "repeat(3,1fr)" : "repeat(2,1fr)", gap:14 }}>
+              {Array(mealCount).fill(null).map((_,i)=>{
+                const targetPct = caloricDist[mealCount][i];
+                const targetKcal = Math.round(targetKcalDay * targetPct / 100);
+                const mealKcal = calcTotals(meals[i]).kcal;
+                const pctUsed = targetKcal > 0 ? Math.min(100, mealKcal/targetKcal*100) : 0;
+                const over = mealKcal > targetKcal * 1.1;
+                return (
+                  <div key={i}>
+                    <div style={{ marginBottom:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:11, color:"#64748b" }}>Cel: <strong style={{ color: over ? "#ef4444" : "#94a3b8" }}>{targetKcal} kcal ({targetPct}%)</strong></span>
+                      <span style={{ fontSize:10, color: over ? "#ef4444" : "#4ade80", fontWeight:700 }}>{mealKcal.toFixed(0)} kcal {over ? "↑" : ""}</span>
+                    </div>
+                    <div style={{ height:3, background:"#21262d", borderRadius:2, marginBottom:8, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${pctUsed}%`, background: over ? "#ef4444" : profile.color, borderRadius:2, transition:"width 0.3s" }} />
+                    </div>
+                    <MealSlot
+                      name={mealNames[i]}
+                      items={meals[i]}
+                      onAdd={(food)=>addToMeal(i,food)}
+                      onRemove={(foodId)=>removeFromMeal(i,foodId)}
+                      onApplyAI={(food, grams)=>addToMealDirect(i, food, grams)}
+                      gInput={gInputs[i]}
+                      setGInput={(fn)=>setGInputs(p=>p.map((g,idx)=>idx===i?fn(g):g))}
+                      search={searches[i]}
+                      setSearch={(v)=>setSearches(p=>p.map((s,idx)=>idx===i?v:s))}
+                      catFilter={catFilters[i]}
+                      setCatFilter={(v)=>setCatFilters(p=>p.map((c,idx)=>idx===i?v:c))}
+                      filteredFoods={getFilteredFoods(i)}
+                      profile={profile}
+                      targetKcal={targetKcal}
+                      targetProtein={totalProteinTarget ? Math.round(totalProteinTarget * caloricDist[mealCount][i] / 100) : 0}
+                      dietGoalLabel={DIET_GOAL_MODIFIERS[dietGoal]?.label}
+                      lifestyleLabel={LIFESTYLE_OPTIONS[lifestyle]?.label}
+                      activityLabel={ACTIVITY_FACTORS[activityLevel]?.label}
+                      dietGoalLabel={DIET_GOAL_MODIFIERS[dietGoal].label}
+                      lifestyleLabel={LIFESTYLE_OPTIONS[lifestyle].label}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            <button onClick={()=>setPage("report")} style={{
+              marginTop:20, padding:"13px 36px", borderRadius:12, border:"none", fontWeight:800, fontSize:14, cursor:"pointer",
+              background:`linear-gradient(135deg,${profile.color},${profile.color}aa)`, color:"#fff"
+            }}>
+              Zobacz raport dietetyczny →
+            </button>
+          </div>
+        )}
+
+        {/* ══════════════════ PAGE: REPORT ══════════════════ */}
+        {page === "report" && (
+          <div className="fade-in">
+            <div style={{ marginBottom:20, display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
+              <div>
+                <div style={{ fontWeight:800, fontSize:22, color:"#f1f5f9" }}>📊 Raport dzienny</div>
+                <div style={{ fontSize:12, color:"#64748b" }}>{patientName || "Pacjent"} · {profile.label}</div>
+                <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:`${DIET_GOAL_MODIFIERS[dietGoal].color}20`, color:DIET_GOAL_MODIFIERS[dietGoal].color, fontWeight:600 }}>
+                    {DIET_GOAL_MODIFIERS[dietGoal].icon} {DIET_GOAL_MODIFIERS[dietGoal].label}
+                  </span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:"rgba(148,163,184,0.1)", color:"#94a3b8", fontWeight:600 }}>
+                    {LIFESTYLE_OPTIONS[lifestyle].icon} {LIFESTYLE_OPTIONS[lifestyle].label}
+                  </span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:"rgba(148,163,184,0.1)", color:"#94a3b8", fontWeight:600 }}>
+                    PAL {ACTIVITY_FACTORS[activityLevel].pal}
+                  </span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background: customKcal ? "rgba(251,191,36,0.15)" : "rgba(34,197,94,0.15)", color: customKcal ? "#fbbf24" : "#22c55e", fontWeight:600 }}>
+                    {customKcal ? "✏️" : "🤖"} {targetKcalDay} kcal/d
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Warning banner - clinical limits */}
+            {activeWarnings.length > 0 && (
+              <div style={{ background:"rgba(239,68,68,0.1)", border:"2px solid rgba(239,68,68,0.4)", borderRadius:12, padding:"14px 18px", marginBottom:20 }}>
+                <div style={{ fontWeight:800, fontSize:14, color:"#ef4444", marginBottom:8 }}>🚨 Przekroczono limity bezpieczeństwa</div>
+                {activeWarnings.map(w=>(
+                  <div key={w.key} style={{ fontSize:13, color:"#fca5a5", marginBottom:3 }}>
+                    • {w.label}: spożyto <strong>{w.value.toFixed(1)}</strong> / limit {w.max} {ALL_NUTRIENTS.find(n=>n.key===w.key)?.unit}
+                    {" — "}{profile.limits?.[w.key]?.warn || "Przekroczono zalecany limit."}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Protein target banner */}
+            {totalProteinTarget && (() => {
+              const proteinPct = Math.round(dayTotals.protein / totalProteinTarget * 100);
+              const proteinOk = dayTotals.protein >= totalProteinTarget * 0.9;
+              return (
+                <div style={{ background: proteinOk ? "rgba(59,130,246,0.08)" : "rgba(239,68,68,0.08)", border:`1px solid ${proteinOk ? "rgba(59,130,246,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius:12, padding:"12px 16px", marginBottom:20, display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+                  <div style={{ flex:1, minWidth:180 }}>
+                    <div style={{ fontWeight:700, fontSize:13, color: proteinOk ? "#60a5fa" : "#f87171", marginBottom:2 }}>
+                      {proteinOk ? "✓ Cel białkowy osiągnięty" : "⚠️ Niedobór białka"}
+                    </div>
+                    <div style={{ fontSize:11, color:"#64748b" }}>
+                      Wymóg: 1,5g × {weight}kg = <strong style={{ color:"#93c5fd" }}>{totalProteinTarget}g/dobę</strong>
+                      {" · "}Spożyto: <strong style={{ color: proteinOk ? "#60a5fa" : "#f87171" }}>{dayTotals.protein.toFixed(1)}g</strong>
+                      {" · "}<span style={{ color: proteinOk ? "#4ade80" : "#f87171", fontWeight:700 }}>{proteinPct}%</span>
+                    </div>
+                  </div>
+                  <div style={{ minWidth:160 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#475569", marginBottom:3 }}>
+                      <span>0g</span><span>{totalProteinTarget}g</span>
+                    </div>
+                    <div style={{ height:6, background:"#21262d", borderRadius:3, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${Math.min(100, proteinPct)}%`, background: proteinOk ? "linear-gradient(90deg,#3b82f6,#2563eb)" : "linear-gradient(90deg,#ef4444,#dc2626)", borderRadius:3, transition:"width 0.4s" }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Summary cards */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:10, marginBottom:20 }}>
+              {[
+                {k:"kcal",l:"Kalorie",c:"#f97316",u:"kcal"},
+                {k:"protein",l:"Białko",c:"#3b82f6",u:"g"},
+                {k:"fat",l:"Tłuszcz",c:"#eab308",u:"g"},
+                {k:"carbs",l:"Węglowodany",c:"#22c55e",u:"g"},
+                {k:"fiber",l:"Błonnik",c:"#84cc16",u:"g"},
+                {k:"sugar",l:"Cukry",c:"#f43f5e",u:"g"},
+              ].map(n=>{
+                const isKcal = n.k === "kcal";
+                const isProtein = n.k === "protein";
+                const rda = isKcal ? targetKcalDay : isProtein && totalProteinTarget ? totalProteinTarget : profile.rrdi[n.k];
+                const pct = rda ? Math.round(dayTotals[n.k]/rda*100) : null;
+                const over = pct && pct > 110;
+                const under = isProtein && totalProteinTarget && dayTotals[n.k] < totalProteinTarget * 0.9;
+                const warn = profile.warningNutrients?.[n.k] && dayTotals[n.k] > profile.warningNutrients[n.k].max;
+                return (
+                  <div key={n.k} style={{ ...S.card, padding:12,
+                    border:`1px solid ${warn ? "#ef444466" : under ? "#ef444455" : isProtein && pct >= 90 ? "#3b82f644" : "#21262d"}`,
+                    background: warn || under ? "rgba(239,68,68,0.07)" : isProtein && pct >= 90 ? "rgba(59,130,246,0.06)" : "#161b22"
+                  }}>
+                    <div style={{ fontSize:10, color:"#64748b", marginBottom:4 }}>{n.l}</div>
+                    <div style={{ fontSize:22, fontWeight:800, color: warn || under ? "#ef4444" : n.c }}>{dayTotals[n.k].toFixed(n.k==="kcal"?0:1)}</div>
+                    <div style={{ fontSize:10, color:"#475569" }}>{n.u}</div>
+                    {isProtein && totalProteinTarget && (
+                      <>
+                        <div style={{ fontSize:10, color:"#475569", marginTop:1 }}>cel: {totalProteinTarget}g (1,5g/kg)</div>
+                        <div style={{ height:3, background:"#21262d", borderRadius:2, margin:"4px 0", overflow:"hidden" }}>
+                          <div style={{ height:"100%", width:`${Math.min(100, dayTotals[n.k]/totalProteinTarget*100)}%`, background: under ? "#ef4444" : "#3b82f6", borderRadius:2 }} />
+                        </div>
+                      </>
+                    )}
+                    {pct !== null && (
+                      <div style={{ fontSize:10, fontWeight:700, color: under ? "#ef4444" : over ? "#f97316" : "#64748b", marginTop:1 }}>
+                        {pct}% {isProtein && totalProteinTarget ? "celu" : "RDA"} {under ? "⚠️" : pct >= 90 && isProtein ? "✓" : ""}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Per-meal breakdown */}
+            <div style={{ ...S.card, padding:18, marginBottom:20 }}>
+              <div style={{ fontWeight:700, fontSize:13, color:"#94a3b8", marginBottom:14, textTransform:"uppercase", letterSpacing:"0.06em", fontSize:11 }}>Podział na posiłki</div>
+              <div style={{ display:"grid", gridTemplateColumns:`repeat(${mealCount},1fr)`, gap:10 }}>
+                {activeMeals.map((items,i)=>{
+                  const t = calcTotals(items);
+                  const targetPct = caloricDist[mealCount][i];
+                  const targetKcal = Math.round(targetKcalDay * targetPct / 100);
+                  const mealProteinTarget = totalProteinTarget ? Math.round(totalProteinTarget * targetPct / 100) : null;
+                  const pctUsed = Math.min(110, t.kcal / targetKcal * 100);
+                  const over = t.kcal > targetKcal * 1.1;
+                  const proteinMet = mealProteinTarget ? t.protein >= mealProteinTarget * 0.9 : true;
+                  return (
+                    <div key={i} style={{ background:"#0d1117", borderRadius:10, padding:"12px", border:`1px solid ${over ? "#ef444433" : !proteinMet && items.length > 0 ? "#3b82f633" : "#21262d"}` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:2 }}>
+                        <div style={{ fontWeight:700, fontSize:13, color:"#f1f5f9" }}>{mealNames[i]}</div>
+                        <div style={{ fontSize:9, color:"#475569" }}>{targetPct}% planu</div>
+                      </div>
+                      <div style={{ fontSize:20, fontWeight:800, color: over ? "#ef4444" : "#f97316", marginBottom:2 }}>{t.kcal.toFixed(0)} kcal</div>
+                      <div style={{ fontSize:10, color:"#475569", marginBottom:4 }}>
+                        cel: {targetKcal} kcal · {over ? <span style={{ color:"#ef4444" }}>↑{(t.kcal - targetKcal).toFixed(0)} kcal</span> : `${(targetKcal - t.kcal).toFixed(0)} do celu`}
+                      </div>
+                      <div style={{ height:4, background:"#21262d", borderRadius:2, marginBottom:8, overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:`${pctUsed}%`, background: over ? "#ef4444" : t.kcal >= targetKcal*0.9 ? "#22c55e" : profile.color, borderRadius:2, transition:"width 0.4s" }} />
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                        {mealProteinTarget && (
+                          <div>
+                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:2 }}>
+                              <span style={{ color: !proteinMet && items.length > 0 ? "#f87171" : "#64748b" }}>Białko {!proteinMet && items.length > 0 ? "⚠️" : proteinMet && items.length > 0 ? "✓" : ""}</span>
+                              <span style={{ color: proteinMet && items.length > 0 ? "#60a5fa" : "#f87171", fontWeight:700 }}>{t.protein.toFixed(1)}g / {mealProteinTarget}g</span>
+                            </div>
+                            <div style={{ height:3, background:"#21262d", borderRadius:2, marginBottom:4, overflow:"hidden" }}>
+                              <div style={{ height:"100%", width:`${Math.min(100,t.protein/mealProteinTarget*100)}%`, background: proteinMet ? "#3b82f6" : "#ef4444", borderRadius:2 }} />
+                            </div>
+                          </div>
+                        )}
+                        {[{l:"Tłuszcz",v:t.fat,c:"#facc15"},{l:"Węglowodany",v:t.carbs,c:"#4ade80"}].map(m=>(
+                          <div key={m.l} style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
+                            <span style={{ color:"#64748b" }}>{m.l}</span>
+                            <span style={{ color:m.c, fontWeight:700 }}>{m.v.toFixed(1)}g</span>
+                          </div>
+                        ))}
+                      </div>
+                      {items.length === 0 && <div style={{ fontSize:10, color:"#374151", marginTop:4 }}>Brak produktów</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Detailed nutrient report */}
+            <div style={{ ...S.card, padding:18 }}>
+              <div style={{ display:"flex", gap:8, marginBottom:18, flexWrap:"wrap" }}>
+                <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em", marginRight:"auto", alignSelf:"center" }}>Szczegóły odżywcze</div>
+                {["Makro","Minerały","Witaminy"].map(g=>(
+                  <button key={g} onClick={()=>setReportTab(g)} style={{
+                    padding:"6px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
+                    background: reportTab===g ? COLORS[g] + "33" : "#21262d",
+                    color: reportTab===g ? COLORS[g] : "#64748b"
+                  }}>{g}</button>
+                ))}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap: "4px 24px" }}>
+                {ALL_NUTRIENTS.filter(n=>n.group===reportTab).map(n=>{
+                  const rda = profile.rrdi[n.key];
+                  const isWarn = profile.warningNutrients?.[n.key] && dayTotals[n.key] > profile.warningNutrients[n.key].max;
+                  const isPri = profile.prioritize?.includes(n.key);
+                  return (
+                    <NutrientBar key={n.key} label={n.label} value={dayTotals[n.key]} rda={rda} unit={n.unit}
+                      color={N_COLORS[n.key] || "#64748b"} isWarning={isWarn} isPriority={isPri} />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Clinical recommendations */}
+            {(profile.prioritize?.length > 0 || Object.keys(profile.warningNutrients||{}).length > 0) && (
+              <div style={{ ...S.card, padding:18, marginTop:16 }}>
+                <div style={{ fontWeight:700, fontSize:11, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Zalecenia kliniczne</div>
+                {profile.prioritize?.length > 0 && (
+                  <div style={{ marginBottom:10 }}>
+                    <div style={{ fontSize:12, color:"#fbbf24", fontWeight:700, marginBottom:6 }}>⭐ Składniki priorytetowe dla {profile.label}:</div>
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      {profile.prioritize.map(k=>{
+                        const n = ALL_NUTRIENTS.find(x=>x.key===k);
+                        if (!n) return null;
+                        const val = dayTotals[k];
+                        const rda = profile.rrdi[k];
+                        const pct = rda ? Math.round(val/rda*100) : null;
+                        return (
+                          <div key={k} style={{ background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.3)", borderRadius:9, padding:"8px 12px", minWidth:100 }}>
+                            <div style={{ fontSize:11, color:"#fbbf24", fontWeight:700 }}>{n.label}</div>
+                            <div style={{ fontSize:14, fontWeight:800, color:"#e2e8f0" }}>{val.toFixed(1)} {n.unit}</div>
+                            {pct !== null && <div style={{ fontSize:10, color: pct >= 80 ? "#4ade80" : "#f87171" }}>{pct}% RDA {pct < 80 ? "⚠️" : "✓"}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div style={{ fontSize:12, color:"#94a3b8", background:"#0d1117", borderRadius:9, padding:"10px 12px", lineHeight:1.6 }}>
+                  <strong style={{ color: profile.color }}>📋 Nota kliniczna:</strong> {profile.notes}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
